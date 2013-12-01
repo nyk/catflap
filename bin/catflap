@@ -1,0 +1,70 @@
+#!/usr/bin/env ruby
+
+require 'optparse'
+require 'catflap'
+
+options = {}
+optparse = OptionParser.new do|opts|
+  opts.separator ""
+  opts.separator "Install/Configure/Service options:"
+  opts.on('-i', '--install', 'Install and initialize the catflap chain') do
+    options['install'] = true
+  end
+  opts.on('-u', '--uninstall', 'Uninstall catflap from iptables') do
+    options['uninstall'] = true
+  end
+  opts.on('-f', '--config-file <filepath>', String, 'Use config file to override default values') do |filepath|
+    options['config_file'] = true
+  end
+  opts.on('-s', '--start-server', 'Start the web api server daemon') do
+    options['start_server'] = true
+  end
+  opts.separator ""
+  opts.separator "Access rule control options:"
+  opts.on('-c', '--check <ipaddr>', String, 'Check if an IP address has access alreqdy') do |ip|
+    options['check'] = ip
+  end
+  opts.on('-a', '--add <ipaddr>', String, 'IP address to which access should be granted') do |ip|
+    options['add'] = ip
+  end
+  opts.on('-d', '--delete <ipaddr>', String, 'IP address or range to remove access previously granted') do |ip|
+    options['del'] = ip
+  end
+  opts.on('-F', '--file <filepath>', String, 'Input file of whitelisted IP addresses') do |filepath|
+    options['filepath'] = filepath
+  end
+  opts.on('-x', '--purge', 'Purge all catflap rules from iptables') do
+    options['purge'] = true
+  end
+  opts.on('-l', '--list', 'List catflap access rules') do
+    options['list'] = true
+  end
+  opts.separator ""
+  opts.separator "Output and process options:"
+  opts.on('-n', '--noop', 'Do not run the operation on iptables - no operation') do
+    cf.noop = true
+  end
+  opts.on('-p', '--print', 'Print the iptables generated to screen') do
+    cf.print = true
+  end
+  opts.on('-h', '--help', 'Print this help page.') do 
+    puts opts
+    exit 0
+  end
+end.parse! ARGV
+
+unless options['start_server']
+  cf = Catflap.new(options['config_file'])
+  cf.purge_rules! if options['purge']
+  cf.install_rules! if options['install']
+  cf.uninstall_rules! if options['uninstall']
+  cf.add_address!(options['add']) if options['add']
+  cf.delete_address!(options['del']) if options['del']
+  cf.add_addresses_from_file!(options['filepath']) if options['filepath']
+  cf.check_address(options['check']) if options['check']
+  cf.list_rules if options['list']
+else
+  require 'catflap-http'
+  CatflapWebserver::start_server(options['config_file'])
+end
+
