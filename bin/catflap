@@ -4,7 +4,7 @@ require 'optparse'
 require 'catflap'
 
 options = {}
-optparse = OptionParser.new do|opts|
+optparse = OptionParser.new do |opts|
   opts.separator ""
   opts.separator "Install/Configure/Service options:"
   opts.on('-i', '--install', 'Install and initialize the catflap chain') do
@@ -14,7 +14,7 @@ optparse = OptionParser.new do|opts|
     options['uninstall'] = true
   end
   opts.on('-f', '--config-file <filepath>', String, 'Use config file to override default values') do |filepath|
-    options['config_file'] = true
+    options['config_file'] = filepath
   end
   opts.on('-s', '--start-server', 'Start the web api server daemon') do
     options['start_server'] = true
@@ -53,18 +53,18 @@ optparse = OptionParser.new do|opts|
   end
 end.parse! ARGV
 
+cf = Catflap.new options['config_file']
 unless options['start_server']
-  cf = Catflap.new(options['config_file'])
   cf.purge_rules! if options['purge']
   cf.install_rules! if options['install']
   cf.uninstall_rules! if options['uninstall']
-  cf.add_address!(options['add']) if options['add']
-  cf.delete_address!(options['del']) if options['del']
-  cf.add_addresses_from_file!(options['filepath']) if options['filepath']
-  cf.check_address(options['check']) if options['check']
+  cf.add_address! options['add'] if options['add']
+  cf.delete_address! options['del'] if options['del']
+  cf.add_addresses_from_file! options['filepath'] if options['filepath']
+  cf.check_address options['check'] if options['check']
   cf.list_rules if options['list']
 else
   require 'catflap-http'
-  CatflapWebserver::start_server(options['config_file'])
+  CatflapWebserver::start_server cf
 end
 
