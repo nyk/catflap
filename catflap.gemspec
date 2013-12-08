@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name        = 'catflap'
-  s.version     = '0.0.2.pre'
+  s.version     = '0.0.2'
   s.summary     = 'Manage NetFilter-based rules to grant port access on-demand via commandline or REST API requests.'
   s.description = 'A simple solution to provide on-demand service access (e.g. port 80 on webserver), where a more robust and secure VPN solution is not available.'
   s.authors     = ['Nyk Cowham']

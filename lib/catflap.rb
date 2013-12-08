@@ -1,10 +1,12 @@
 require 'yaml'
+require 'ipaddr'
 
 class Catflap
 
   attr_accessor :config, :chain, :port, :dports, :print, :noop, :log_rejected
 
   def initialize config_file
+    config_file = config_file || '/usr/local/etc/catflap.yaml'
     @config = {}
     @config = YAML.load_file config_file if File.readable? config_file
     @port = @config['server']['port'] || 4777
@@ -43,15 +45,18 @@ class Catflap
   end
 
   def check_address ip
+    check_user_input ip
     return system "iptables -C #{@chain} -s #{ip} -p tcp -m multiport --dports #{@dports} -j ACCEPT\n"
   end
 
   def add_address! ip
+    check_user_input ip
     output = "iptables -I #{@chain} 1 -s #{ip} -p tcp -m multiport --dports #{@dports} -j ACCEPT\n"
     execute! output
   end
 
   def delete_address! ip
+    check_user_input ip
     output = "iptables -D #{@chain} -s #{ip} -p tcp -m multiport --dports #{@dports} -j ACCEPT\n"
     execute! output
   end 
@@ -60,6 +65,7 @@ class Catflap
     if File.readable? filepath
       output = ""
       File.open(filepath, "r").each_line do |ip|
+        check_user_input ip
         output << "iptables -I #{@chain} 1 -s #{ip.chomp} -p tcp -m multiport --dports #{@dports} -j ACCEPT\n"
       end
       execute! output
@@ -73,5 +79,9 @@ class Catflap
     if @print then puts output end
     system output unless @noop
   end 
+
+  def check_user_input suspect
+    return IPAddr.new(suspect)
+  end
 
 end
