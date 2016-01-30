@@ -33,6 +33,9 @@ optparse = OptionParser.new do |opts|
   opts.on('-F', '--file <filepath>', String, 'Input file of whitelisted IP addresses') do |filepath|
     options['filepath'] = filepath
   end
+  opts.on('-v', '--version', 'Print version of catflap') do
+    options['version'] = true
+  end
   opts.on('-x', '--purge', 'Purge all catflap rules from iptables') do
     options['purge'] = true
   end
@@ -42,12 +45,12 @@ optparse = OptionParser.new do |opts|
   opts.separator ""
   opts.separator "Output and process options:"
   opts.on('-n', '--noop', 'Do not run the operation on iptables - no operation') do
-    cf.noop = true
+    options['noop'] = true
   end
   opts.on('-p', '--print', 'Print the iptables generated to screen') do
-    cf.print = true
+    options['print'] = true
   end
-  opts.on('-h', '--help', 'Print this help page.') do 
+  opts.on('-h', '--help', 'Print this help page.') do
     puts opts
     exit 0
   end
@@ -64,6 +67,7 @@ rescue NoMethodError
 end
 unless options['start_server']
   begin
+    cf.print_version if options['version']
     cf.purge_rules! if options['purge']
     cf.install_rules! if options['install']
     cf.uninstall_rules! if options['uninstall']
@@ -79,4 +83,3 @@ else
   require 'catflap-http'
   CatflapWebserver::start_server cf
 end
-
