@@ -16,17 +16,34 @@ $(document).ready(function() {
   });
 
   // Bind token input field with 'enter' keypress.
-  $('input#token').keypress(function(e) {
+  $('input#passphrase').keypress(function(e) {
     if(e.which == 13) {
-      var pass = $('input#token').val();
-      var salt = Math.floor(Math.random()*100000);
-      var token = Sha256.hash(pass + salt);
+      var pass = $('input#passphrase').val();
+      var data = {
+        "random" : Math.floor(Math.random()*100000)
+      };
+
+      data.token = Sha256.hash(pass + data.random);
 
       $.ajax({
-        url: url,
+        url: '/catflap/knock',
         data: data,
-        success: success,
-        dataType: dataType
+        success: function(jsonData){
+          data = JSON.parse(jsonData);
+          console.log(data);
+          switch (data.StatusCode) {
+            case 200:
+              console.log(data.StatusCode);
+              $(location).attr('href',data.UrlRedirect);
+              break;
+            default:
+              console.log(data.StatusCode);
+              break;
+          }
+        }
+      })
+      .fail(function(){
+        alert('fail!');
       });
 
     }

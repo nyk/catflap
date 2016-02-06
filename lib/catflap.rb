@@ -7,23 +7,33 @@ require 'digest'
 class Catflap
 
   attr_accessor :print, :noop, :config
-  attr_reader :fwplugin, :port, :docroot, :dports, :passphrase
+  attr_reader :fwplugin, :port, :docroot, :dports, :passphrases
 
   def initialize config_file
-    config_file = config_file || '/usr/local/etc/catflap.yaml'
+    config_file = config_file || '/usr/local/etc/catflap/config.yaml'
     @config = {}
     @config = YAML.load_file config_file if File.readable? config_file
     @port = @config['server']['port'] || 4777
     @docroot = @config['server']['docroot'] || './ui'
-    @passphrase = @config['server']['passphrase'] || nil
+    @passfile = @config['server']['passfile'] || nil
     @fwplugin = @config['firewall']['plugin'] || 'iptables'
     @dports = @config['firewall']['dports'] || '80,443'
     initialize_firewall_plugin
+    load_passphrases
   end
 
   def initialize_firewall_plugin
     require_relative "catflap/plugins/firewall/#{@fwplugin}.rb"
     @firewall = Object.const_get(@fwplugin.capitalize).new @config
+  end
+
+  def load_passphrases
+    if File.readable? @passfile
+      phrases = YAML.load_file @passfile
+      @passphrases = phrases['passphrases']
+    else
+      raise IOError, "Cannot read the passfile!"
+    end
   end
 
   def print_version

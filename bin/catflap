@@ -19,6 +19,9 @@ optparse = OptionParser.new do |opts|
   opts.on('-s', '--start-server', 'Start the web api server daemon') do
     options[:start_server] = true
   end
+  opts.on('-r', '--reload', 'reload the passfile without restarting server') do
+    options[:reload] = true
+  end
   opts.separator ""
   opts.separator "Access rule control options:"
   opts.on('-c', '--check <ipaddr>', String, 'Check if an IP address has access already') do |ip|
@@ -70,6 +73,7 @@ end
 unless options[:start_server]
   begin
     cf.print_version if options[:version]
+    cf.load_passphrases if options[:reload]
     cf.purge_rules! if options[:purge]
     cf.install_rules! if options[:install]
     cf.uninstall_rules! if options[:uninstall]

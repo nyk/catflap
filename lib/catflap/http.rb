@@ -46,8 +46,8 @@ module CfWebserver
           raise HTTPStatus::NotFound if !response_class.respond_to? response_method
 
           if :knock == response_method
-            url = response_class.send response_method, req, resp, @cf
-            #resp.set_redirect HTTPStatus::Redirect, url
+            jsonData = response_class.send response_method, req, resp, @cf
+            resp.body = jsonData
           end
 
           # Remaining path segments get passed in as arguments to the method
@@ -74,21 +74,40 @@ end
 module CfRestService
   class CfRestService
 
+    AUTH_FAIL_CODE = 401;
+    AUTH_PASS_CODE = 200;
+
     def self.index
       return "hello world"
     end
 
     def self.knock req, resp, cf
+      authenticated = false
       ip = req.peeraddr.pop
       host = req.addr[2]
-      query = req.query();
-      if query['token'] == cf.generate_token(cf.passphrase, query['random'])
-        result = {
-          :host => host,
-          :ip => ip
-        }
-        return JSON.generate(result);
+      query = req.query()
+
+      cf.passphrases.each do |key, value |
+        if query['token'] == cf.generate_token(value, query['random'])
+          authenticated = true
+          break
+        end
       end
+      
+      if authenticated
+        result = {
+          :Status => "Authenticated",
+          :StatusCode => AUTH_PASS_CODE,
+          :UrlRedirect => "http://www.corbis.com"
+        }
+      else
+        result = {
+          :Status => "Authentication failed",
+          :StatusCode => AUTH_FAIL_CODE,
+          :UrlRedirect => "http://www.google.com"
+        }
+      end
+      return JSON.generate(result);
       #cf.add_address! ip unless cf.check_address ip
       #return "http://" << host << ":80"
     end
