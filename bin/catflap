@@ -82,6 +82,6 @@ unless options[:start_server]
     puts "Invalid Argument: make sure IP address or range is correct (i.e. CIDR format)\n"
   end
 else
-  require 'catflap-http'
+  require 'catflap/http'
   CatflapWebserver::start_server cf
 end

@@ -1,5 +1,3 @@
-#!/usr/bin/env ruby
-
 require 'catflap'
 require 'webrick'
 require 'json'
