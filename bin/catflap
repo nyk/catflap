@@ -83,5 +83,5 @@ unless options[:start_server]
   end
 else
   require 'catflap/http'
-  CatflapWebserver::start_server cf
+  CfWebserver::start_server cf
 end

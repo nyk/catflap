@@ -7,7 +7,7 @@ require 'digest'
 class Catflap
 
   attr_accessor :print, :noop, :config
-  attr_reader :fwplugin, :port, :docroot, :dports
+  attr_reader :fwplugin, :port, :docroot, :dports, :passphrase
 
   def initialize config_file
     config_file = config_file || '/usr/local/etc/catflap.yaml'
@@ -15,6 +15,7 @@ class Catflap
     @config = YAML.load_file config_file if File.readable? config_file
     @port = @config['server']['port'] || 4777
     @docroot = @config['server']['docroot'] || './ui'
+    @passphrase = @config['server']['passphrase'] || nil
     @fwplugin = @config['firewall']['plugin'] || 'iptables'
     @dports = @config['firewall']['dports'] || '80,443'
     initialize_firewall_plugin

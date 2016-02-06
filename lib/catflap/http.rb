@@ -82,10 +82,10 @@ module CfRestService
       ip = req.peeraddr.pop
       host = req.addr[2]
       query = req.query();
-      if query['token'] == cf.generate_token 'fastbinder' query['random']
+      if query['token'] == cf.generate_token(cf.passphrase, query['random'])
         result = {
-          :host : host,
-          :ip : ip
+          :host => host,
+          :ip => ip
         }
         return JSON.generate(result);
       end

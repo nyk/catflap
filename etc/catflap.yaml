@@ -1,6 +1,7 @@
 server:
   port: 4777
-  docroot: '/home/nyk/PhpstormProjects/catflap/ui'
+  docroot: '/home/nyk/Devel/catflap/ui'
+  passphrase: 'frisky kitten'
 
 firewall:
   plugin: 'iptables'
