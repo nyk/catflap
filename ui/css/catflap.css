@@ -4,6 +4,16 @@
   display: block;
 }
 
+.hidden {
+  display: none;
+}
+
+input[type="text"]:focus.failed {
+  background-color: pink;
+  border-color: red;
+  color: black;
+}
+
 input[type="text"] {
   display: block;
   margin: 0px auto;
@@ -26,7 +36,7 @@ input[type="text"]:focus {
   box-shadow: inset 1px 1px 2px 0 #c9c9c9;
 }
 
-p#locked-message {
+.message {
   width: 50%;
   font-size: 2em;
   margin-top: 1.5em;

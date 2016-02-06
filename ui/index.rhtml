@@ -12,8 +12,12 @@
 <div id="logo-wrapper"><img id="logo" class="centered" src="/images/catflap.png" /></div>
 <div id="passphrase-form-wrapper" class="centered">
     <input id="passphrase" name="passphrase" type="text" class="default-value" value="Enter your pass phrase here." />
-  <p id="locked-message" class="centered">The site you are trying to access is locked. You must enter a valid pass phrase
-  to enter the site.</p>
+    <div id="message-wrapper" class="centered">
+      <div id="locked-message" class="message centered">The site you are trying to access is locked. You must enter a valid pass phrase
+  to enter the site.</div>
+      <div id="failed-message" class="message centered hidden">Sorry, but we don't recognize that pass phrase. Please try again and if you
+        are still having trouble email your contact for further instructions.</div>
+    </div>
 </div>
 </body>
 </html>

@@ -1,4 +1,4 @@
-$(document).ready(function() {
+(function($) { $(document).ready(function() {
 
   // Hide default text
   $('.default-value').each(function() {
@@ -19,10 +19,20 @@ $(document).ready(function() {
   $('input#passphrase').keypress(function(e) {
     if(e.which == 13) {
       var pass = $('input#passphrase').val();
+
+      // Get the first word to send as the key for the pass phrase.
+      var matches = pass.match(/^(\w+)\s+/);
+      // If there is nothing that looks like a key then don't make
+      // an authentication request.
+      if (matches === null) {
+        return;
+      }
+
+      // Construct our data packet to send to the server.
       var data = {
+        "_key" : matches[1],
         "random" : Math.floor(Math.random()*100000)
       };
-
       data.token = Sha256.hash(pass + data.random);
 
       $.ajax({
@@ -33,11 +43,19 @@ $(document).ready(function() {
           console.log(data);
           switch (data.StatusCode) {
             case 200:
-              console.log(data.StatusCode);
-              $(location).attr('href',data.UrlRedirect);
+              if (data.RedirectHostname) {
+                hostname = data.RedirectHostname;
+              } else {
+                hostname = document.location.hostname;
+              }
+              url = data.RedirectProtocol + "://" + hostname + ":" +
+                data.RedirectPort;
+              $(location).attr('href', url);
               break;
             default:
-              console.log(data.StatusCode);
+              $('#passphrase').addClass('failed');
+              $('#locked-message').hide();
+              $('#failed-message').show();
               break;
           }
         }
@@ -48,5 +66,5 @@ $(document).ready(function() {
 
     }
   });
-
 });
+})(jQuery);

@@ -8,6 +8,10 @@ server:
   port: 4777 # the TCP port that the catflap server listens on.
   docroot: '/home/nyk/Devel/catflap/ui' # you can override the ui location.
   passfile: '/usr/local/etc/catflap/passfile.yaml' # pass phrases are stored here.
+  redirect: # specify where the visitor should be redirected after authentication.
+    protocol: 'https' # the default is http.
+    url: '' # the default is the url of the authentication screen.
+    port: 8080 # the default is port 80.
 
 firewall:
   plugin: 'iptables' # this is the only plugin driver available currently.
