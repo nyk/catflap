@@ -1,8 +1,13 @@
 server:
   port: 4777
+  docroot: '/home/nyk/PhpstormProjects/catflap/ui'
 
 firewall:
   plugin: 'iptables'
-  chain: 'catflap-accept'
   dports: '80,8080,443'
-  log_rejected: true
+  options:
+    chain: 'catflap-accept'
+    reject_policy: 'reject'
+    reject_with: 'icmp-net-prohibited'
+    log_rejected: true
+    accept_local: false

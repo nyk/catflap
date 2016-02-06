@@ -1,34 +1,32 @@
+require 'catflap/version'
 require 'yaml'
 require 'ipaddr'
+require 'resolv'
+require 'digest'
 
 class Catflap
-  Version = '1.0.0.pre'
 
-  attr_accessor :print, :noop, :log_rejected
-  attr_reader :fwplugin, :port, :docroot, :dports, :chain
+  attr_accessor :print, :noop, :config
+  attr_reader :fwplugin, :port, :docroot, :dports
 
   def initialize config_file
     config_file = config_file || '/usr/local/etc/catflap.yaml'
     @config = {}
     @config = YAML.load_file config_file if File.readable? config_file
     @port = @config['server']['port'] || 4777
-    @docroot = @config['server']['docroot'] || './htdoc'
+    @docroot = @config['server']['docroot'] || './ui'
     @fwplugin = @config['firewall']['plugin'] || 'iptables'
-    @chain = @config['firewall']['chain'] || 'catflap-accept'
     @dports = @config['firewall']['dports'] || '80,443'
-    @print = false
-    @noop = false
-    @log_rejected = true
     initialize_firewall_plugin
   end
 
   def initialize_firewall_plugin
-    require_relative "plugins/firewall/#{@fwplugin}.rb"
-    @firewall = Object.const_get(@fwplugin.capitalize).new @config['firewall']
+    require_relative "catflap/plugins/firewall/#{@fwplugin}.rb"
+    @firewall = Object.const_get(@fwplugin.capitalize).new @config
   end
 
   def print_version
-    puts "Catflap version #{Version}"
+    puts "Catflap version #{Catflap::VERSION}"
   end
 
   def install_rules!
@@ -71,18 +69,27 @@ class Catflap
       end
       execute! output
     else
-      puts "The file #{filepath} is not readable!"
-      exit 1
+      raise IOError, "The file #{filepath} is not readable!"
     end
   end
 
   def execute! output
-    if @print then puts output end
-    system output unless @noop
+    puts output if @print
+    unless @noop
+      system output
+    end
   end
 
   def check_user_input suspect
-    return IPAddr.new(suspect)
+    begin
+      ip = Resolv.getaddress(suspect)
+    rescue Resolv::ResolvError
+      ip = false
+    end
+  end
+
+  def generate_token pass, salt
+    Digest::SHA256.hexdigest pass + salt
   end
 
 end

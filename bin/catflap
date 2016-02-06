@@ -1,54 +1,54 @@
 #!/usr/bin/env ruby
 
-require 'optparse'
-require 'catflap'
+require "optparse"
+require "catflap"
 
 options = {}
 optparse = OptionParser.new do |opts|
   opts.separator ""
   opts.separator "Install/Configure/Service options:"
   opts.on('-i', '--install', 'Install and initialize the catflap chain') do
-    options['install'] = true
+    options[:install] = true
   end
   opts.on('-u', '--uninstall', 'Uninstall catflap from iptables') do
-    options['uninstall'] = true
+    options[:uninstall] = true
   end
   opts.on('-f', '--config-file <filepath>', String, 'Use config file to override default values') do |filepath|
-    options['config_file'] = filepath
+    options[:config_file] = filepath
   end
   opts.on('-s', '--start-server', 'Start the web api server daemon') do
-    options['start_server'] = true
+    options[:start_server] = true
   end
   opts.separator ""
   opts.separator "Access rule control options:"
-  opts.on('-c', '--check <ipaddr>', String, 'Check if an IP address has access alreqdy') do |ip|
-    options['check'] = ip
+  opts.on('-c', '--check <ipaddr>', String, 'Check if an IP address has access already') do |ip|
+    options[:check] = ip
   end
   opts.on('-a', '--add <ipaddr>', String, 'IP address to which access should be granted') do |ip|
-    options['add'] = ip
+    options[:add] = ip
   end
   opts.on('-d', '--delete <ipaddr>', String, 'IP address or range to remove access previously granted') do |ip|
-    options['del'] = ip
+    options[:delete] = ip
   end
   opts.on('-F', '--file <filepath>', String, 'Input file of whitelisted IP addresses') do |filepath|
-    options['filepath'] = filepath
+    options[:filepath] = filepath
   end
-  opts.on('-v', '--version', 'Print version of catflap') do
-    options['version'] = true
+  opts.on('-v', '--version', 'Display the version of catflap') do
+    options[:version] = true
   end
-  opts.on('-x', '--purge', 'Purge all catflap rules from iptables') do
-    options['purge'] = true
+  opts.on('-x', '--purge', 'Purge all catflap rules from the firewall') do
+    options[:purge] = true
   end
   opts.on('-l', '--list', 'List catflap access rules') do
-    options['list'] = true
+    options[:list] = true
   end
   opts.separator ""
   opts.separator "Output and process options:"
   opts.on('-n', '--noop', 'Do not run the operation on iptables - no operation') do
-    options['noop'] = true
+    options[:noop] = true
   end
   opts.on('-p', '--print', 'Print the iptables generated to screen') do
-    options['print'] = true
+    options[:print] = true
   end
   opts.on('-h', '--help', 'Print this help page.') do
     puts opts
@@ -57,25 +57,27 @@ optparse = OptionParser.new do |opts|
 end.parse! ARGV
 
 begin
-  cf = Catflap.new options['config_file']
+  cf = Catflap.new options[:config_file]
+  cf.print = options[:print] != nil
+  cf.noop = options[:noop] != nil
 rescue Psych::SyntaxError
   puts "There is a YAML syntax error in your catflap configuration file.\n"
   exit 1
 rescue NoMethodError
-  puts "Cannot read the configuration file (#{options['config_file']}) or default file location: /usr/local/etc/catflap.yaml\n"
+  puts "Cannot read the configuration file (#{options[:config_file]}) or default file location: /usr/local/etc/catflap.yaml\n"
   exit 1
 end
-unless options['start_server']
+unless options[:start_server]
   begin
-    cf.print_version if options['version']
-    cf.purge_rules! if options['purge']
-    cf.install_rules! if options['install']
-    cf.uninstall_rules! if options['uninstall']
-    cf.add_address! options['add'] if options['add']
-    cf.delete_address! options['del'] if options['del']
-    cf.add_addresses_from_file! options['filepath'] if options['filepath']
-    cf.check_address options['check'] if options['check']
-    cf.list_rules if options['list']
+    cf.print_version if options[:version]
+    cf.purge_rules! if options[:purge]
+    cf.install_rules! if options[:install]
+    cf.uninstall_rules! if options[:uninstall]
+    cf.add_address! options[:add] if options[:add]
+    cf.delete_address! options[:delete] if options[:delete]
+    cf.add_addresses_from_file! options[:filepath] if options[:filepath]
+    cf.check_address options[:check] if options[:check]
+    cf.list_rules if options[:list]
   rescue ArgumentError
     puts "Invalid Argument: make sure IP address or range is correct (i.e. CIDR format)\n"
   end
