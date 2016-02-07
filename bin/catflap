@@ -65,10 +65,8 @@ begin
   cf.noop = options[:noop] != nil
 rescue Psych::SyntaxError
   puts "There is a YAML syntax error in your catflap configuration file.\n"
-  exit 1
 rescue NoMethodError
   puts "Cannot read the configuration file (#{options[:config_file]}) or default file location: /usr/local/etc/catflap/config.yaml\n"
-  exit 1
 end
 unless options[:start_server]
   begin
