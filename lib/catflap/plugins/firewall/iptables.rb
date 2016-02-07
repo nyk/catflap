@@ -1,8 +1,8 @@
 class Iptables
-  def initialize config
+  def initialize(config)
     @catflap_port = config['server']['port']
     @dports = config['firewall']['dports']
-    @chain = config['firewall']['options']['chain'] || 'catflap-accept'
+    @chain = config['firewall']['options']['chain'] || 'CATFLAP'
     @log_rejected = config['firewall']['options']['log_rejected'] || false
     @accept_local = config['firewall']['options']['accept_local'] || false
     @reject_policy = config['firewall']['options']['reject_policy'].to_sym || :drop

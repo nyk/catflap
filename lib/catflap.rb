@@ -6,9 +6,9 @@ require 'digest'
 
 class Catflap
 
-  attr_accessor :print, :noop, :bind_addr
-  attr_reader :fwplugin,  :port, :docroot, :dports, :passphrases, \
-              :redir_protocol, :redir_hostname, :redir_port
+  attr_accessor :print, :noop, :config
+  attr_reader :fwplugin, :bind_addr, :port, :docroot, :endpoint, :dports, \
+              :passphrases, :redir_protocol, :redir_hostname, :redir_port
 
   def initialize( file_path = nil )
     initialize_config file_path
@@ -17,34 +17,62 @@ class Catflap
   end
 
   def initialize_config( file_path = nil )
-    file_path = file_path || '/usr/local/etc/catflap/config.yaml'
-    @config = {}
+    #file_path = file_path || '/usr/local/etc/catflap/config.yaml'
+
+    # Set the default configuration values.
+    @defaults = {
+      "server" => {
+        "listen_addr" => "0.0.0.0",
+        "port" => 4777,
+        "docroot" => "./ui",
+        "endpoint" => "/catflap",
+        "passfile" => nil,
+        "redirect" => {
+          "protocol" => "http",
+          "hostname" => "json",
+          "port" => 80
+        }
+      },
+      "firewall" => {
+        "plugin" => "iptables",
+        "dports" => "80,443"
+      }
+    }
+
     if file_path != nil
       @config = YAML.load_file file_path if File.readable? file_path
+      @bind_addr = get_config_value ['server','listen_addr']
+      @port = get_config_value ['server','port']
+      @docroot = get_config_value ['server','docroot']
+      @endpoint = get_config_value ['server','endpoint']
+      @passfile = get_config_value ['server','passfile']
+      @redir_protocol = get_config_value ['server','redirect','protocol']
+      @redir_hostname = get_config_value ['server','redirect','hostname']
+      @redir_port = get_config_value ['server','redirect','port']
+      @fwplugin = get_config_value ['firewall','plugin']
+      @dports = get_config_value ['firewall','dports']
     else
+      @config = defaults
       puts "There is no configuration file specifed. Using defaults."
     end
 
-    @config['server'] = {} unless @config['server']
-    @bind_addr = @config['server']['listen_addr'] || '0.0.0.0'
-    @port = @config['server']['port'] || 4777
-    @docroot = @config['server']['docroot'] || './ui'
-    @rest_endpoint = @config['server']['endpoint'] || '/catflap'
-    @passfile = @config['server']['passfile'] || nil
+  end
 
-    @config['server']['redirect'] = {} unless @config['server']['redirect']
-    @redir_protocol = @config['server']['redirect']['protocol'] || 'http'
-    @redir_hostname = @config['server']['redirect']['hostname'] || nil
-    @redir_port = @config['server']['redirect']['port'] || 80
-
-    @config['firewall'] = {} unless @config['firewall']
-    @fwplugin = @config['firewall']['plugin'] || 'iptables'
-    @dports = @config['firewall']['dports'] || '80,443'
+  def get_config_value keys
+    begin
+      # Check to see if we have a value configured from file.
+      overidden = keys.inject(@config, :fetch)
+    rescue KeyError
+      # No we don't, so look up the default value and return it.
+      return keys.inject(@defaults, :fetch)
+    end
+    # A value was found in configuration file, so return that overidden value.
+    return overidden
   end
 
   def initialize_firewall_plugin
     require_relative "catflap/plugins/firewall/#{@fwplugin}.rb"
-    @firewall = Object.const_get(@fwplugin.capitalize).new @config
+    @firewall = Object.const_get(@fwplugin.capitalize).new(@config)
   end
 
   def load_passphrases
@@ -52,7 +80,7 @@ class Catflap
       phrases = YAML.load_file @passfile
       @passphrases = phrases['passphrases']
     else
-      raise IOError, "Cannot read the passfile!"
+      raise IOError, "Cannot read the passfile: #{@passfile}!"
     end
   end
 

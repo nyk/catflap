@@ -10,7 +10,7 @@ server:
   endpoint: '/catflap' # the endpoint for the REST API.
   passfile: '/usr/local/etc/catflap/passfile.yaml' # pass phrases are stored here.
   redirect: # specify where the visitor should be redirected after authentication.
-    www.corbis.com: # you can configure the redirect for each access hostname.
+    blah: # you can configure the redirect for each access hostname.
       protocol: 'https'
       hostname: 'www.corbisimages.com'
       port: 8081
@@ -21,10 +21,10 @@ server:
 
 firewall:
   plugin: 'iptables' # this is the only plugin driver available currently.
-  dports: '80,8080,443' # lock multiple ports separating them by commas.
+  dports: '80,443' # lock multiple ports separating them by commas.
   options: # options are specific to each firewall plugin driver.
-    chain: 'catflap-accept'
+    chain: 'CATFLAP'
     reject_policy: 'reject'
-    rejectWith: 'icmp-net-prohibited'
+    reject_with: 'icmp-net-prohibited'
     log_rejected: true
     accept_local: false

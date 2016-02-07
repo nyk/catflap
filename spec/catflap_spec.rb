@@ -1,10 +1,10 @@
 require 'spec_helper'
 
-CONFIG = 'etc/catflap.yaml'
+config_path = 'etc/config.yaml'
 
 describe Catflap do
   before :each do
-    @cf = Catflap.new(CONFIG)
+    @cf = Catflap.new(config_path)
     @cf.noop = true
   end
 
@@ -33,9 +33,9 @@ describe Catflap do
     @cf.print = true
     rules = <<RULES
 iptables -N catflap-accept
-iptables -A INPUT -p tcp -m multiport --dports 80,8080,443 -j catflap-accept
-iptables -A INPUT -p tcp -m multiport --dports 80,8080,443 -j LOG
-iptables -A INPUT -p tcp -m multiport --dports 80,8080,443 -j REJECT
+iptables -A INPUT -p tcp -m multiport --dports 80,443 -j CATFLAP
+iptables -A INPUT -p tcp -m multiport --dports 80,443 -j LOG
+iptables -A INPUT -p tcp -m multiport --dports 80,443 -j REJECT
 RULES
     expect{@cf.install_rules!}.to output(rules).to_stdout
   end
@@ -43,30 +43,30 @@ RULES
   it 'can print uninstall rules' do
     @cf.print = true
     rules = <<RULES
-iptables -D INPUT -p tcp -m multiport --dports 80,8080,443 -j catflap-accept
+iptables -D INPUT -p tcp -m multiport --dports 80,443 -j CATFLAP
 iptables -F catflap-accept
 iptables -X catflap-accept
-iptables -D INPUT -p tcp -m multiport --dports 80,8080,443 -j LOG
-iptables -D INPUT -p tcp -m multiport --dports 80,8080,443 -j REJECT
+iptables -D INPUT -p tcp -m multiport --dports 80,443 -j LOG
+iptables -D INPUT -p tcp -m multiport --dports 80,443 -j REJECT
 RULES
     expect{@cf.uninstall_rules!}.to output(rules).to_stdout
   end
 
   it 'can print purge rules' do
     @cf.print = true
-    rules = "iptables -F catflap-accept\n"
+    rules = "iptables -F CATFLAP\n"
     expect{@cf.purge_rules!}.to output(rules).to_stdout
   end
 
   it 'can print add address rules' do
     @cf.print = true
-    rules = "iptables -I catflap-accept 1 -s 127.0.0.1 -p tcp -m multiport --dports 80,8080,443 -j ACCEPT\n"
+    rules = "iptables -I CATFLAP 1 -s 127.0.0.1 -p tcp -m multiport --dports 80,443 -j ACCEPT\n"
     expect{@cf.add_address! "127.0.0.1"}.to output(rules).to_stdout
   end
 
   it 'can print delete address rules' do
     @cf.print = true
-    rules = "iptables -D catflap-accept -s 127.0.0.1 -p tcp -m multiport --dports 80,8080,443 -j ACCEPT\n"
+    rules = "iptables -D catflap-accept -s 127.0.0.1 -p tcp -m multiport --dports 80,443 -j ACCEPT\n"
     expect{@cf.delete_address! "127.0.0.1"}.to output(rules).to_stdout
   end
 end
