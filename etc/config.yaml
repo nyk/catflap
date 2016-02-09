@@ -8,16 +8,11 @@ server:
   port: 4777 # the TCP port that the catflap server listens on.
   docroot: './ui' # you can override the ui location.
   endpoint: '/catflap' # the endpoint for the REST API.
-  passfile: '/usr/local/etc/catflap/passfile.yaml' # pass phrases are stored here.
+  passfile: './etc/passfile.yaml' # pass phrases are stored here.
   redirect: # specify where the visitor should be redirected after authentication.
-    blah: # you can configure the redirect for each access hostname.
-      protocol: 'https'
-      hostname: 'www.corbisimages.com'
-      port: 8081
-    default: # if there is no matching hostname then use the default redirect.
-      protocol: '' # the default is http.
-      hostname: '' # the default is the hostname of the authentication page.
-      port: 80 # the default is port 80.
+    protocol: 'http' # the default is http.
+    hostname: 'json' # the default is the hostname of the authentication page.
+    port: 80 # the default is port 80.
 
 firewall:
   plugin: 'iptables' # this is the only plugin driver available currently.
