@@ -4,8 +4,7 @@ config_path = 'etc/config.yaml'
 
 describe Catflap do
   before :each do
-    @cf = Catflap.new(config_path)
-    @cf.noop = true
+    @cf = Catflap.new(config_path, true, true)
   end
 
   it 'has a version number' do
@@ -30,7 +29,6 @@ describe Catflap do
   end
 
   it 'can print install rules' do
-    @cf.print = true
     rules = <<RULES
 iptables -N CATFLAP
 iptables -A INPUT -p tcp -m multiport --dports 80,443 -j CATFLAP

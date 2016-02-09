@@ -12,7 +12,9 @@ class Catflap
   attr_reader :fwplugin, :bind_addr, :port, :docroot, :endpoint, :dports, \
               :passphrases, :redir_protocol, :redir_hostname, :redir_port
 
-  def initialize( file_path = nil )
+  def initialize( file_path = nil, noop = false, show = false )
+    @noop = noop
+    @print = show
     initialize_config file_path
     initialize_firewall_plugin
     load_passphrases
@@ -41,7 +43,7 @@ class Catflap
 
   def initialize_firewall_plugin
     require_relative "catflap/plugins/firewall/#{@fwplugin}.rb"
-    @firewall = Object.const_get(@fwplugin.capitalize).new @config
+    @firewall = Object.const_get(@fwplugin.capitalize).new @config, @noop, @print
   end
 
   def load_passphrases
@@ -58,34 +60,34 @@ class Catflap
   end
 
   def install_rules!
-    execute! @firewall.install_rules
+    @firewall.install_rules!
   end
 
   def uninstall_rules!
-    execute! @firewall.uninstall_rules
+    @firewall.uninstall_rules!
   end
 
   def purge_rules!
-    execute! @firewall.purge_rules
+    @firewall.purge_rules!
   end
 
   def list_rules
-    system @firewall.list_rules
+    @firewall.list_rules
   end
 
   def check_address ip
     check_user_input ip
-    return system @firewall.check_address ip
+    return @firewall.check_address ip
   end
 
   def add_address! ip
     check_user_input ip
-    execute! @firewall.add_address ip
+    @firewall.add_address! ip
   end
 
   def delete_address! ip
     check_user_input ip
-    execute! @firewall.delete_address ip
+    @firewall.delete_address! ip
   end
 
   def add_addresses_from_file! filepath

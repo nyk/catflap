@@ -61,9 +61,9 @@ optparse = OptionParser.new do |opts|
 end.parse! ARGV
 
 begin
-  cf = Catflap.new options[:config_file]
-  cf.print = options[:print] != nil
-  cf.noop = options[:noop] != nil
+  show = options[:print] != nil
+  noop = options[:noop] != nil
+  cf = Catflap.new options[:config_file], noop, show
 rescue Psych::SyntaxError
   puts "There is a YAML syntax error in your catflap configuration file.\n"
   exit 1

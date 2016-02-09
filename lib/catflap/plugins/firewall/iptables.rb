@@ -1,5 +1,7 @@
 class Iptables
-  def initialize config
+  def initialize config, noop, show
+    @noop = noop
+    @print = show
     @catflap_port = config['server']['port']
     @dports = config['firewall']['dports']
     @chain = config['firewall']['options']['chain'] || 'CATFLAP'
@@ -8,7 +10,7 @@ class Iptables
     @reject_policy = config['firewall']['options']['reject_policy'].to_sym || :drop
   end
 
-  def install_rules
+  def install_rules!
     output  = "iptables -N #{@chain}\n" # Create a new user-defined chain as a container for our catflap netfilter rules
     if @accept_local
       output << "iptables -A #{@chain} -s 127.0.0.1 -p tcp -m multiport --dports #{@dports} -j ACCEPT\n" # Accept packets from localhost
@@ -26,10 +28,10 @@ class Iptables
     else # drop is the default
       output << "iptables -A INPUT -p tcp -m multiport --dports #{@dports} -j DROP\n" # Drop any other packets to the ports on the INPUT chain
     end
-    return output.freeze
+    execute! output
   end
 
-  def uninstall_rules
+  def uninstall_rules!
     output  = "iptables -D INPUT -p tcp -m multiport --dports #{@dports} -j #{@chain}\n" # Remove user-defined chain from INPUT chain
     output << "iptables -F #{@chain}\n" # Flush the catflap user-defined chain
     output << "iptables -X #{@chain}\n" # Remove the catflap chain
@@ -45,27 +47,34 @@ class Iptables
     else # drop is the default
       output << "iptables -D INPUT -p tcp -m multiport --dports #{@dports} -j DROP\n" # Remove the packet dropping rule
     end
-    return output.freeze
+    execute! output
   end
 
-  def purge_rules
-    return "iptables -F #{@chain}".freeze
+  def purge_rules!
+    execute! "iptables -F #{@chain}"
   end
 
   def list_rules
-    return "iptables -S #{@chain}".freeze
+    execute! "iptables -S #{@chain}"
   end
 
   def check_address ip
-    return "iptables -C #{@chain} -s #{ip} -p tcp -m multiport --dports #{@dports} -j ACCEPT\n".freeze
+    execute! "iptables -C #{@chain} -s #{ip} -p tcp -m multiport --dports #{@dports} -j ACCEPT\n"
   end
 
-  def add_address ip
-    return "iptables -I #{@chain} 1 -s #{ip} -p tcp -m multiport --dports #{@dports} -j ACCEPT\n".freeze
+  def add_address! ip
+    execute! "iptables -I #{@chain} 1 -s #{ip} -p tcp -m multiport --dports #{@dports} -j ACCEPT\n"
   end
 
-  def delete_address ip
-    return "iptables -D #{@chain} -s #{ip} -p tcp -m multiport --dports #{@dports} -j ACCEPT\n".freeze
+  def delete_address! ip
+    execute! "iptables -D #{@chain} -s #{ip} -p tcp -m multiport --dports #{@dports} -j ACCEPT\n"
+  end
+
+  def execute! output
+    puts output if @print
+    unless @noop
+      system output
+    end
   end
 
 end
