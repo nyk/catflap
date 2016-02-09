@@ -1,5 +1,5 @@
 class Iptables
-  def initialize(config)
+  def initialize config
     @catflap_port = config['server']['port']
     @dports = config['firewall']['dports']
     @chain = config['firewall']['options']['chain'] || 'CATFLAP'

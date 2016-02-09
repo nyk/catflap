@@ -4,9 +4,11 @@ require 'ipaddr'
 require 'resolv'
 require 'digest'
 
+##
+# Main library class.
 class Catflap
 
-  attr_accessor :print, :noop, :config
+  attr_accessor :print, :noop
   attr_reader :fwplugin, :bind_addr, :port, :docroot, :endpoint, :dports, \
               :passphrases, :redir_protocol, :redir_hostname, :redir_port
 
@@ -17,62 +19,29 @@ class Catflap
   end
 
   def initialize_config( file_path = nil )
-    #file_path = file_path || '/usr/local/etc/catflap/config.yaml'
+    file_path = file_path || "etc/config.yaml" # default config
 
-    # Set the default configuration values.
-    @defaults = {
-      "server" => {
-        "listen_addr" => "0.0.0.0",
-        "port" => 4777,
-        "docroot" => "./ui",
-        "endpoint" => "/catflap",
-        "passfile" => nil,
-        "redirect" => {
-          "protocol" => "http",
-          "hostname" => "json",
-          "port" => 80
-        }
-      },
-      "firewall" => {
-        "plugin" => "iptables",
-        "dports" => "80,443"
-      }
-    }
-
-    if file_path != nil
+    if File.readable? file_path
       @config = YAML.load_file file_path if File.readable? file_path
-      @bind_addr = get_config_value ['server','listen_addr']
-      @port = get_config_value ['server','port']
-      @docroot = get_config_value ['server','docroot']
-      @endpoint = get_config_value ['server','endpoint']
-      @passfile = get_config_value ['server','passfile']
-      @redir_protocol = get_config_value ['server','redirect','protocol']
-      @redir_hostname = get_config_value ['server','redirect','hostname']
-      @redir_port = get_config_value ['server','redirect','port']
-      @fwplugin = get_config_value ['firewall','plugin']
-      @dports = get_config_value ['firewall','dports']
     else
-      @config = defaults
-      puts "There is no configuration file specifed. Using defaults."
+      raise IOError, "Cannot read configuration file: #{file_path}"
     end
 
-  end
-
-  def get_config_value keys
-    begin
-      # Check to see if we have a value configured from file.
-      overidden = keys.inject(@config, :fetch)
-    rescue KeyError
-      # No we don't, so look up the default value and return it.
-      return keys.inject(@defaults, :fetch)
-    end
-    # A value was found in configuration file, so return that overidden value.
-    return overidden
+    @bind_addr = @config['server']['listen_addr']
+    @port = @config['server']['port']
+    @docroot = @config['server']['docroot']
+    @endpoint = @config['server']['endpoint']
+    @passfile = @config['server']['passfile']
+    @redir_protocol = @config['server']['redirect']['protocol']
+    @redir_hostname = @config['server']['redirect']['hostname']
+    @redir_port = @config['server']['redirect']['port']
+    @fwplugin = @config['firewall']['plugin']
+    @dports = @config['firewall']['dports']
   end
 
   def initialize_firewall_plugin
     require_relative "catflap/plugins/firewall/#{@fwplugin}.rb"
-    @firewall = Object.const_get(@fwplugin.capitalize).new(@config)
+    @firewall = Object.const_get(@fwplugin.capitalize).new @config
   end
 
   def load_passphrases

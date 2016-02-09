@@ -1,4 +1,5 @@
 #!/usr/bin/env ruby
+$:.unshift File.expand_path("../../lib", __FILE__)
 
 require "optparse"
 require "catflap"
@@ -65,9 +66,12 @@ begin
   cf.noop = options[:noop] != nil
 rescue Psych::SyntaxError
   puts "There is a YAML syntax error in your catflap configuration file.\n"
-rescue NoMethodError
-  puts "Cannot read the configuration file (#{options[:config_file]}) or default file location: /usr/local/etc/catflap/config.yaml\n"
+  exit 1
+rescue IOError => e
+  puts "Configuration error: #{e.message}"
+  exit 1
 end
+
 unless options[:start_server]
   begin
     cf.print_version if options[:version]

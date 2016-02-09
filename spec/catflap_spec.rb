@@ -32,7 +32,7 @@ describe Catflap do
   it 'can print install rules' do
     @cf.print = true
     rules = <<RULES
-iptables -N catflap-accept
+iptables -N CATFLAP
 iptables -A INPUT -p tcp -m multiport --dports 80,443 -j CATFLAP
 iptables -A INPUT -p tcp -m multiport --dports 80,443 -j LOG
 iptables -A INPUT -p tcp -m multiport --dports 80,443 -j REJECT
@@ -44,8 +44,8 @@ RULES
     @cf.print = true
     rules = <<RULES
 iptables -D INPUT -p tcp -m multiport --dports 80,443 -j CATFLAP
-iptables -F catflap-accept
-iptables -X catflap-accept
+iptables -F CATFLAP
+iptables -X CATFLAP
 iptables -D INPUT -p tcp -m multiport --dports 80,443 -j LOG
 iptables -D INPUT -p tcp -m multiport --dports 80,443 -j REJECT
 RULES
@@ -66,7 +66,7 @@ RULES
 
   it 'can print delete address rules' do
     @cf.print = true
-    rules = "iptables -D catflap-accept -s 127.0.0.1 -p tcp -m multiport --dports 80,443 -j ACCEPT\n"
+    rules = "iptables -D CATFLAP -s 127.0.0.1 -p tcp -m multiport --dports 80,443 -j ACCEPT\n"
     expect{@cf.delete_address! "127.0.0.1"}.to output(rules).to_stdout
   end
 end
