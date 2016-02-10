@@ -7,21 +7,25 @@ module CfWebserver
   # Add a mime type for *.rhtml files
   HTTPUtils::DefaultMimeTypes.store('rhtml', 'text/html')
 
-  def self.generate_server bind_addr, port
+  def generate_server bind_addr, port
     config = {:BindAddress => bind_addr, :Port => port}
-    server = HTTPServer.new(config)
-    yield server if block_given?
+    @server = HTTPServer.new(config)
+    yield @server if block_given?
     ['INT', 'TERM'].each {|signal|
-      trap(signal) {server.shutdown}
+      trap(signal) {@server.shutdown}
     }
-    server.start
+    @server.start
   end
 
-  def self.start_server cf
+  def start_server cf
     generate_server(cf.bind_addr, cf.port) do |server|
       server.mount '/catflap', CfApiServlet, cf
       server.mount '/', HTTPServlet::FileHandler, cf.docroot
     end
+  end
+
+  def stop_server
+    @server.shutdown
   end
 
   class CfApiServlet < HTTPServlet::AbstractServlet

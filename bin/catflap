@@ -2,92 +2,47 @@
 $:.unshift File.expand_path("../../lib", __FILE__)
 
 require "optparse"
-require "catflap"
+require "catflap/cli"
 
-options = {}
+include CatflapCli # Command implementations
+
+# Parse options
+@options = {}
 optparse = OptionParser.new do |opts|
-  opts.separator ""
-  opts.separator "Install/Configure/Service options:"
-  opts.on('-i', '--install', 'Install and initialize the catflap chain') do
-    options[:install] = true
-  end
-  opts.on('-u', '--uninstall', 'Uninstall catflap from iptables') do
-    options[:uninstall] = true
-  end
+  opts.banner = ""
   opts.on('-f', '--config-file <filepath>', String, 'Use config file to override default values') do |filepath|
-    options[:config_file] = filepath
+    @options[:config_file] = filepath
   end
-  opts.on('-s', '--start-server', 'Start the web api server daemon') do
-    options[:start_server] = true
+  opts.on('-V', '--version', 'Display the version of catflap') do
+    @options[:version] = true
   end
-  opts.on('-r', '--reload', 'reload the passfile without restarting server') do
-    options[:reload] = true
+  opts.on('-n', '--noop', 'Do not run the operation on firewall - no operation') do
+    @options[:noop] = true
   end
-  opts.separator ""
-  opts.separator "Access rule control options:"
-  opts.on('-c', '--check <ipaddr>', String, 'Check if an IP address has access already') do |ip|
-    options[:check] = ip
-  end
-  opts.on('-a', '--add <ipaddr>', String, 'IP address to which access should be granted') do |ip|
-    options[:add] = ip
-  end
-  opts.on('-d', '--delete <ipaddr>', String, 'IP address or range to remove access previously granted') do |ip|
-    options[:delete] = ip
-  end
-  opts.on('-F', '--file <filepath>', String, 'Input file of whitelisted IP addresses') do |filepath|
-    options[:filepath] = filepath
-  end
-  opts.on('-v', '--version', 'Display the version of catflap') do
-    options[:version] = true
-  end
-  opts.on('-x', '--purge', 'Purge all catflap rules from the firewall') do
-    options[:purge] = true
-  end
-  opts.on('-l', '--list', 'List catflap access rules') do
-    options[:list] = true
-  end
-  opts.separator ""
-  opts.separator "Output and process options:"
-  opts.on('-n', '--noop', 'Do not run the operation on iptables - no operation') do
-    options[:noop] = true
-  end
-  opts.on('-p', '--print', 'Print the iptables generated to screen') do
-    options[:print] = true
+  opts.on('-v', '--verbose', 'Display additional information to screen') do
+    @options[:verbose] = true
   end
   opts.on('-h', '--help', 'Print this help page.') do
+    puts "Usage: catflap <command> [<arg>]\n\n"
+    puts "Commands:"
+    puts "\tstart \t\t\t Start the catflap server"
+    puts "\tstop \t\t\t Stop the catflap server"
+    puts "\trestart \t\t Stop and restart the catflap server"
+    puts "\treload \t\t\t Reload the pass phrases without restarting the server"
+    puts "\tstatus \t\t\t Display the status of the catflap server"
+    puts "\tinstall \t\t Install and initialize the catflap rule chain"
+    puts "\tuninstall \t\t Uninstall catflap rules from firewall"
+    puts "\tcheck <ip> \t\t Check if <ip> already has access"
+    puts "\tgrant <ip> \t\t Add <ip> to allow access"
+    puts "\trevoke <ip> \t\t Remove access for <ip>"
+    puts "\tpurge \t\t\t Remove all catflap managed access grants"
+    puts "\tload <filename> \t Bulk load a list of IP access grants from file"
+    puts "\tlist \t\t\t Display a list of all catflap managed access grants"
     puts opts
     exit 0
   end
-end.parse! ARGV
+end.parse! ARGV # the options are stripped from ARGV after parsing.
+command, arg = ARGV # destructure what is left.
 
-begin
-  show = options[:print] != nil
-  noop = options[:noop] != nil
-  cf = Catflap.new options[:config_file], noop, show
-rescue Psych::SyntaxError
-  puts "There is a YAML syntax error in your catflap configuration file.\n"
-  exit 1
-rescue IOError => e
-  puts "Configuration error: #{e.message}"
-  exit 1
-end
-
-unless options[:start_server]
-  begin
-    cf.print_version if options[:version]
-    cf.load_passphrases if options[:reload]
-    cf.firewall.purge_rules! if options[:purge]
-    cf.firewall.install_rules! if options[:install]
-    cf.firewall.uninstall_rules! if options[:uninstall]
-    cf.firewall.add_address! options[:add] if options[:add]
-    cf.firewall.delete_address! options[:delete] if options[:delete]
-    cf.add_addresses_from_file! options[:filepath] if options[:filepath]
-    cf.firewall.check_address options[:check] if options[:check]
-    cf.firewall.list_rules if options[:list]
-  rescue ArgumentError
-    puts "Invalid Argument: make sure IP address or range is correct (i.e. CIDR format)\n"
-  end
-else
-  require 'catflap/http'
-  CfWebserver::start_server cf
-end
+createCatflap # create and initialize a catflap instance.
+dispatchCommands command, arg # pass command and arg to command dispatcher.

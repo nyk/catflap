@@ -10,7 +10,8 @@ class Catflap
 
   attr_accessor :print, :noop
   attr_reader :fwplugin, :bind_addr, :port, :docroot, :endpoint, :dports, \
-              :passphrases, :redir_protocol, :redir_hostname, :redir_port
+              :passphrases, :redir_protocol, :redir_hostname, :redir_port, \
+              :firewall
 
   def initialize( file_path = nil, noop = false, show = false )
     @noop = noop
@@ -57,37 +58,6 @@ class Catflap
 
   def print_version
     puts "Catflap version #{Catflap::VERSION}"
-  end
-
-  def install_rules!
-    @firewall.install_rules!
-  end
-
-  def uninstall_rules!
-    @firewall.uninstall_rules!
-  end
-
-  def purge_rules!
-    @firewall.purge_rules!
-  end
-
-  def list_rules
-    @firewall.list_rules
-  end
-
-  def check_address ip
-    check_user_input ip
-    return @firewall.check_address ip
-  end
-
-  def add_address! ip
-    check_user_input ip
-    @firewall.add_address! ip
-  end
-
-  def delete_address! ip
-    check_user_input ip
-    @firewall.delete_address! ip
   end
 
   def add_addresses_from_file! filepath
