@@ -1,4 +1,8 @@
+require 'catflap/firewall'
+
 class Iptables
+  include Firewall # Mixin to give us the extend! method
+
   def initialize config, noop, show
     @noop = noop
     @print = show
@@ -68,13 +72,6 @@ class Iptables
 
   def delete_address! ip
     execute! "iptables -D #{@chain} -s #{ip} -p tcp -m multiport --dports #{@dports} -j ACCEPT\n"
-  end
-
-  def execute! output
-    puts output if @print
-    unless @noop
-      system output
-    end
   end
 
 end

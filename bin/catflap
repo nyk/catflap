@@ -76,14 +76,14 @@ unless options[:start_server]
   begin
     cf.print_version if options[:version]
     cf.load_passphrases if options[:reload]
-    cf.purge_rules! if options[:purge]
-    cf.install_rules! if options[:install]
-    cf.uninstall_rules! if options[:uninstall]
-    cf.add_address! options[:add] if options[:add]
-    cf.delete_address! options[:delete] if options[:delete]
+    cf.firewall.purge_rules! if options[:purge]
+    cf.firewall.install_rules! if options[:install]
+    cf.firewall.uninstall_rules! if options[:uninstall]
+    cf.firewall.add_address! options[:add] if options[:add]
+    cf.firewall.delete_address! options[:delete] if options[:delete]
     cf.add_addresses_from_file! options[:filepath] if options[:filepath]
-    cf.check_address options[:check] if options[:check]
-    cf.list_rules if options[:list]
+    cf.firewall.check_address options[:check] if options[:check]
+    cf.firewall.list_rules if options[:list]
   rescue ArgumentError
     puts "Invalid Argument: make sure IP address or range is correct (i.e. CIDR format)\n"
   end
