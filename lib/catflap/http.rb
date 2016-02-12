@@ -9,23 +9,19 @@ module CfWebserver
 
   def generate_server bind_addr, port
     config = {:BindAddress => bind_addr, :Port => port}
-    @server = HTTPServer.new(config)
-    yield @server if block_given?
+    server = HTTPServer.new(config)
+    yield server if block_given?
     ['INT', 'TERM'].each {|signal|
-      trap(signal) {@server.shutdown}
+      trap(signal) {server.shutdown}
     }
-    @server.start
+    server.start
   end
 
-  def start_server cf
+  def server_start cf
     generate_server(cf.bind_addr, cf.port) do |server|
       server.mount '/catflap', CfApiServlet, cf
       server.mount '/', HTTPServlet::FileHandler, cf.docroot
     end
-  end
-
-  def stop_server
-    @server.shutdown
   end
 
   class CfApiServlet < HTTPServlet::AbstractServlet
@@ -87,18 +83,23 @@ module CfRestService
       query = req.query()
       passkey = query['_key']
 
+      # If configured to get hostname from ajax then set the hostname to then
+      # hostname sent by the browser via the ajax request.
+      hostname = (cf.redir_hostname == 'ajax') ? \
+          query['hostname'] : cf.redir_hostname
+
       # If we have a matching key in the passfile then create a test token.
       if cf.passphrases[query['_key']] != nil
         test_token = cf.generate_token(cf.passphrases[passkey], query['random'])
       end
 
       if test_token and test_token == query['token']
-        #cf.add_address! ip unless cf.check_address ip
+        cf.add_address! ip unless cf.check_address ip
         result = {
           :Status => "Authenticated",
           :StatusCode => AUTH_PASS_CODE,
           :RedirectProtocol => cf.redir_protocol,
-          :RedirectHostname => cf.redir_hostname,
+          :RedirectHostname => hostname,
           :RedirectPort => cf.redir_port
         }
       else

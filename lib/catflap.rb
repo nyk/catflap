@@ -1,21 +1,19 @@
 require 'catflap/version'
 require 'yaml'
-require 'ipaddr'
-require 'resolv'
 require 'digest'
 
 ##
 # Main library class.
 class Catflap
 
-  attr_accessor :print, :noop
+  attr_accessor :verbose, :noop
   attr_reader :fwplugin, :bind_addr, :port, :docroot, :endpoint, :dports, \
               :passphrases, :redir_protocol, :redir_hostname, :redir_port, \
               :firewall
 
-  def initialize( file_path = nil, noop = false, show = false )
+  def initialize( file_path = nil, noop = false, verbose = false )
     @noop = noop
-    @print = show
+    @verbose = verbose
     initialize_config file_path
     initialize_firewall_plugin
     load_passphrases
@@ -44,7 +42,7 @@ class Catflap
 
   def initialize_firewall_plugin
     require_relative "catflap/plugins/firewall/#{@fwplugin}.rb"
-    @firewall = Object.const_get(@fwplugin.capitalize).new @config, @noop, @print
+    @firewall = Object.const_get(@fwplugin.capitalize).new @config, @noop, @verbose
   end
 
   def load_passphrases
@@ -64,27 +62,11 @@ class Catflap
     if File.readable? filepath
       output = ""
       File.open(filepath, "r").each_line do |ip|
-        check_user_input ip
         output += @firewall.add_address ip.chomp
       end
       execute! output
     else
       raise IOError, "The file #{filepath} is not readable!"
-    end
-  end
-
-  def execute! output
-    puts output if @print
-    unless @noop
-      system output
-    end
-  end
-
-  def check_user_input suspect
-    begin
-      ip = Resolv.getaddress(suspect)
-    rescue Resolv::ResolvError
-      ip = false
     end
   end
 

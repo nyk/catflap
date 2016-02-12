@@ -1,6 +1,6 @@
 require 'spec_helper'
 
-config_path = 'etc/config.yaml'
+config_path = 'spec/config-files/iptables.yaml'
 
 describe Catflap do
   before :all do
@@ -29,7 +29,7 @@ describe Catflap do
   end
 
   it 'can configure redir_hostname from file' do
-    expect(@cf.redir_hostname).to eq("json")
+    expect(@cf.redir_hostname).to eq("ajax")
   end
 
   it 'can configure redir_port from file' do

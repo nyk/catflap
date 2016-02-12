@@ -2,25 +2,24 @@
 $:.unshift File.expand_path("../../lib", __FILE__)
 
 require "optparse"
+require "resolv"
 require "catflap/cli"
 
-include CatflapCli # Command implementations
-
 # Parse options
-@options = {}
+options = {}
 optparse = OptionParser.new do |opts|
   opts.banner = ""
   opts.on('-f', '--config-file <filepath>', String, 'Use config file to override default values') do |filepath|
-    @options[:config_file] = filepath
+    options[:config_file] = filepath
   end
   opts.on('-V', '--version', 'Display the version of catflap') do
-    @options[:version] = true
+    options[:version] = true
   end
   opts.on('-n', '--noop', 'Do not run the operation on firewall - no operation') do
-    @options[:noop] = true
+    options[:noop] = true
   end
   opts.on('-v', '--verbose', 'Display additional information to screen') do
-    @options[:verbose] = true
+    options[:verbose] = true
   end
   opts.on('-h', '--help', 'Print this help page.') do
     puts "Usage: catflap <command> [<arg>]\n\n"
@@ -44,5 +43,20 @@ optparse = OptionParser.new do |opts|
 end.parse! ARGV # the options are stripped from ARGV after parsing.
 command, arg = ARGV # destructure what is left.
 
-createCatflap # create and initialize a catflap instance.
-dispatchCommands command, arg # pass command and arg to command dispatcher.
+cli = CatflapCli.new options # create and initialize a catflap instance.
+
+begin
+  cli.dispatchCommands command, arg # pass command and arg to command dispatcher.
+rescue Resolv::ResolvError => err
+  puts "Malformed IP address error: " << err.message
+rescue Psych::SyntaxError => err
+  puts "There is a YAML syntax error in your catflap configuration file: #{err.message}"
+rescue ArgumentError => err
+  puts "Missing argument error: " << err.message
+rescue IOError => err
+  puts "Configuration error: #{err.message}"
+rescue NameError => err
+  puts "Command unknown error: " << err.message
+rescue StandardError => err
+  puts "There was an error: " << err.message
+end

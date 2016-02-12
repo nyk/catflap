@@ -15,11 +15,11 @@ server:
     port: 80 # the default is port 80.
 
 firewall:
-  plugin: 'netfilter' # options are netfilter or iptables
+  plugin: 'iptables' # options are netfilter or iptables
   dports: '80,443' # lock multiple ports separating them by commas.
   options: # options are specific to each firewall plugin driver.
     chain: 'CATFLAP'
-    #reject_policy: 'reject'
-    #reject_with: 'icmp-net-prohibited'
+    reject_policy: 'reject'
+    reject_with: 'icmp-net-prohibited'
     log_rejected: true
-    accept_local: false # this is only set to false only when devs are testing catflap.
+    accept_local: true # this is only set to false only when devs are testing catflap.
