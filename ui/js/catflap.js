@@ -40,17 +40,15 @@
         data: data,
         success: function(jsonData){
           data = JSON.parse(jsonData);
+          hostname = null;
           console.log(data);
           switch (data.StatusCode) {
             case 200:
-              if (data.RedirectHostname) {
-                hostname = data.RedirectHostname;
+              if (data.RedirectUrl == "reload") {
+                location.reload(true);
               } else {
-                hostname = document.location.hostname;
+                $(location).attr('href', data.RedirectUrl);
               }
-              url = data.RedirectProtocol + "://" + hostname + ":" +
-                data.RedirectPort;
-              $(location).attr('href', url);
               break;
             default:
               $('#passphrase').addClass('failed');
@@ -61,7 +59,7 @@
         }
       })
       .fail(function(){
-        alert('fail!');
+        alert($(location).attr('hostname'));
       });
 
     }

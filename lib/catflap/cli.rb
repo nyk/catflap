@@ -34,14 +34,29 @@ class CatflapCli
       raise ArgumentError, "You must provide a valid IP address" if arg == nil
       @cf.firewall.delete_address! arg
     when "load"
-      raise ArgumentError, "You must provide a file path" if arg == nil
+      raise ArgumentError, "You must provide a file path" unless arg
       @cf.add_addresses_from_file! arg
     when "check"
-      raise ArgumentError, "You must provide a valid IP address" if arg == nil
+      raise ArgumentError, "You must provide a valid IP address" unless arg
       @cf.firewall.check_address arg
+    when "bulkload"
+      raise ArgumentError, "You must provide a file path" unless arg
+      add_addresses_from_file arg
     when nil # catflap --version can be run with no command, so that's ok.
     else
       raise NameError, "there is no command '#{command}'"
+    end
+  end
+
+  def add_addresses_from_file! filepath
+    if File.readable? filepath
+      output = ""
+      File.open(filepath, "r").each_line do |ip|
+        output += @cf.firewall.add_address ip.chomp
+      end
+      execute! output
+    else
+      raise IOError, "The file #{filepath} is not readable!"
     end
   end
 

@@ -35,6 +35,11 @@ module CfWebserver
       # Split the path into piece
       path = req.path[1..-1].split('/')
 
+      # We don't want to cache catflap login page so set response headers.
+      resp['Cache-Control'] = "no-cache, no-store, must-revalidate"
+      resp['Pragma'] = "no-cache"
+      resp['Expires'] = "0"
+
       response_class = CfRestService.const_get 'CfRestService'
 
       if response_class and response_class.is_a? Class
@@ -79,35 +84,35 @@ module CfRestService
     def self.knock req, resp, cf
       authenticated = false
       ip = req.peeraddr.pop
-      host = req.addr[2]
       query = req.query()
       passkey = query['_key']
-
-      # If configured to get hostname from ajax then set the hostname to then
-      # hostname sent by the browser via the ajax request.
-      hostname = (cf.redir_hostname == 'ajax') ? \
-          query['hostname'] : cf.redir_hostname
 
       # If we have a matching key in the passfile then create a test token.
       if cf.passphrases[query['_key']] != nil
         test_token = cf.generate_token(cf.passphrases[passkey], query['random'])
       end
 
+      # by default we tell the browser to reload the page, but we can configure
+      # catflap in the configuration file to redirect to some other URL.
+      redirect_url = (cf.redirect_url) ? cf.redirect_url : "reload"
+
       if test_token and test_token == query['token']
-        cf.add_address! ip unless cf.check_address ip
+        # The tokens matched and validated so we add the address and respond
+        # to the browser.
+        cf.firewall.add_address! ip
         result = {
           :Status => "Authenticated",
           :StatusCode => AUTH_PASS_CODE,
-          :RedirectProtocol => cf.redir_protocol,
-          :RedirectHostname => hostname,
-          :RedirectPort => cf.redir_port
+          :RedirectUrl => redirect_url
         }
+
       else
         result = {
           :Status => "Authentication failed",
           :StatusCode => AUTH_FAIL_CODE,
         }
       end
+
       return JSON.generate(result);
     end
 
@@ -124,7 +129,7 @@ module CfRestService
     def self.remove req, resp, cf, args
       ip = args[0]
       cf.delete_address! ip
-      return "Access granted to #{ip} has been removed"
+      return "Access granted to #{ip} has been revoked"
     end
 
     def self.check req, resp, cf, args

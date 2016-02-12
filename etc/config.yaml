@@ -9,17 +9,11 @@ server:
   docroot: './ui' # you can override the ui location.
   endpoint: '/catflap' # the endpoint for the REST API.
   passfile: './etc/passfile.yaml' # pass phrases are stored here.
-  redirect: # specify where the visitor should be redirected after authentication.
-    protocol: 'http' # the default is http.
-    hostname: 'ajax' # the default is the hostname of the authentication page.
-    port: 80 # the default is port 80.
 
 firewall:
   plugin: 'netfilter' # options are netfilter or iptables
   dports: '80,443' # lock multiple ports separating them by commas.
   options: # options are specific to each firewall plugin driver.
     chain: 'CATFLAP'
-    #reject_policy: 'reject'
-    #reject_with: 'icmp-net-prohibited'
     log_rejected: true
     accept_local: false # this is only set to false only when devs are testing catflap.

@@ -8,13 +8,12 @@ class Catflap
 
   attr_accessor :verbose, :noop
   attr_reader :fwplugin, :bind_addr, :port, :docroot, :endpoint, :dports, \
-              :passphrases, :redir_protocol, :redir_hostname, :redir_port, \
-              :firewall
+              :passphrases, :redirect_url, :firewall
 
   def initialize( file_path = nil, noop = false, verbose = false )
     @noop = noop
     @verbose = verbose
-    initialize_config file_path
+    initialize_config file_path # TODO: integrate Configliere
     initialize_firewall_plugin
     load_passphrases
   end
@@ -33,9 +32,7 @@ class Catflap
     @docroot = @config['server']['docroot']
     @endpoint = @config['server']['endpoint']
     @passfile = @config['server']['passfile']
-    @redir_protocol = @config['server']['redirect']['protocol']
-    @redir_hostname = @config['server']['redirect']['hostname']
-    @redir_port = @config['server']['redirect']['port']
+    @redirect_url = @config['server']['redirect_url'] || nil
     @fwplugin = @config['firewall']['plugin']
     @dports = @config['firewall']['dports']
   end
@@ -56,18 +53,6 @@ class Catflap
 
   def print_version
     puts "Catflap version #{Catflap::VERSION}"
-  end
-
-  def add_addresses_from_file! filepath
-    if File.readable? filepath
-      output = ""
-      File.open(filepath, "r").each_line do |ip|
-        output += @firewall.add_address ip.chomp
-      end
-      execute! output
-    else
-      raise IOError, "The file #{filepath} is not readable!"
-    end
   end
 
   def generate_token pass, salt
