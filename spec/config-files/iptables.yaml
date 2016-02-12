@@ -9,10 +9,7 @@ server:
   docroot: './ui' # you can override the ui location.
   endpoint: '/catflap' # the endpoint for the REST API.
   passfile: './etc/passfile.yaml' # pass phrases are stored here.
-  redirect: # specify where the visitor should be redirected after authentication.
-    protocol: 'http' # the default is http.
-    hostname: 'ajax' # the default is the hostname of the authentication page.
-    port: 80 # the default is port 80.
+  redirect_url: 'http://localhost/'
 
 firewall:
   plugin: 'iptables' # options are netfilter or iptables

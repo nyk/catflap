@@ -1,16 +1,19 @@
+require 'open3'
 require 'resolv'
 
 module Firewall
 
-  def execute! output
+  def execute!(output, display=false)
     puts output if @verbose
     unless @noop
-      system output
+      out, err, status = Open3.capture3 output << " 2>/dev/null"
+      puts out if display
+      return (err != "")
     end
   end
 
   def assert_valid_ipaddr suspect
-    ip = Resolv.getaddress(suspect) # raises Resolv::ResolvError on bad IP.
+    Resolv.getaddress(suspect) # raises Resolv::ResolvError on bad IP.
   end
 
 end

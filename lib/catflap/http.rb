@@ -99,7 +99,7 @@ module CfRestService
       if test_token and test_token == query['token']
         # The tokens matched and validated so we add the address and respond
         # to the browser.
-        cf.firewall.add_address! ip
+        cf.firewall.add_address! ip if @cf.firewall.check_address arg
         result = {
           :Status => "Authenticated",
           :StatusCode => AUTH_PASS_CODE,

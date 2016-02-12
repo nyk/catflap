@@ -24,16 +24,8 @@ describe Catflap do
     expect(@cf.endpoint).to eq("/catflap")
   end
 
-  it 'can configure redir_protocol from file' do
-    expect(@cf.redir_protocol).to eq("http")
-  end
-
-  it 'can configure redir_hostname from file' do
-    expect(@cf.redir_hostname).to eq("ajax")
-  end
-
-  it 'can configure redir_port from file' do
-    expect(@cf.redir_port).to eq(80)
+  it 'can configure redirect_url from file' do
+    expect(@cf.redirect_url).to eq("http://localhost/")
   end
 
   it 'can configure fwplugin from file' do

@@ -45,17 +45,25 @@ command, arg = ARGV # destructure what is left.
 cli = CatflapCli.new options # create and initialize a command line controller object.
 
 begin
-  cli.dispatchCommands command, arg # pass command and arg to command dispatcher.
+  status = cli.dispatchCommands command, arg # pass command and arg to command dispatcher.
+  if command == 'check'
+    if status
+      puts "The ip '#{arg}' has access GRANTED"
+    else
+      puts "The ip '#{arg}' does NOT have access"
+    end
+  end
+
 rescue Resolv::ResolvError => err
-  puts "Malformed IP address error: " << err.message
+  $stderr.puts "Malformed IP address error: " << err.message
 rescue Psych::SyntaxError => err
-  puts "There is a YAML syntax error in your catflap config file: #{err.message}"
+  $stderr.puts "There is a YAML syntax error in your catflap config file: #{err.message}"
 rescue ArgumentError => err
-  puts "Missing argument error: " << err.message
+  $stderr.puts "Missing argument error: " << err.message
 rescue IOError => err
-  puts "File error: #{err.message}"
+  $stderr.puts "File error: #{err.message}"
 rescue NameError => err
-  puts "Command unknown error: " << err.message
+  $stderr.puts "Command unknown error: " << err.message
 rescue StandardError => err
-  puts "There was an error: " << err.message
+  $stderr.puts "There was an error: " << err.message
 end

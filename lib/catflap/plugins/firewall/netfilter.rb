@@ -50,7 +50,7 @@ class Netfilter
   end
 
   def list_rules
-    execute! "iptables -t nat -S #{@chain}"
+    execute! "iptables -t nat -S #{@chain}", true
   end
 
   def check_address ip
