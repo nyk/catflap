@@ -26,10 +26,10 @@ class CatflapCli
     when "uninstall"
       @cf.firewall.uninstall_rules!
     when "list"
-      @cf.firewall.list_rules
+      puts @cf.firewall.list_rules
     when "grant"
       raise ArgumentError, "You must provide a valid IP address" if arg == nil
-      @cf.firewall.add_address! arg if @cf.firewall.check_address arg
+      @cf.firewall.add_address! arg if not @cf.firewall.check_address arg
     when "revoke"
       raise ArgumentError, "You must provide a valid IP address" if arg == nil
       @cf.firewall.delete_address! arg if @cf.firewall.check_address arg

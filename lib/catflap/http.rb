@@ -99,7 +99,7 @@ module CfRestService
       if test_token and test_token == query['token']
         # The tokens matched and validated so we add the address and respond
         # to the browser.
-        if cf.firewall.check_address ip
+        if not cf.firewall.check_address ip
           cf.firewall.add_address! ip
         end
 
