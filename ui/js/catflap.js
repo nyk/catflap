@@ -21,7 +21,9 @@
       var pass = $('input#passphrase').val();
 
       // Get the first word to send as the key for the pass phrase.
-      var matches = pass.match(/^(\w+)\s+/);
+      // The first word is any part that comes before a special
+      // character (including spaces) other than the underscore.
+      var matches = pass.match(/^(\w+)\W+/);
       // If there is nothing that looks like a key then don't make
       // an authentication request.
       if (matches === null) {
@@ -59,7 +61,7 @@
         }
       })
       .fail(function(){
-        alert($(location).attr('hostname'));
+        alert(data._key);
       });
 
     }

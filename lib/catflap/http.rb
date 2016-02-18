@@ -99,7 +99,10 @@ module CfRestService
       if test_token and test_token == query['token']
         # The tokens matched and validated so we add the address and respond
         # to the browser.
-        cf.firewall.add_address! ip if @cf.firewall.check_address arg
+        if cf.firewall.check_address ip
+          cf.firewall.add_address! ip
+        end
+
         result = {
           :Status => "Authenticated",
           :StatusCode => AUTH_PASS_CODE,
@@ -112,10 +115,10 @@ module CfRestService
           :StatusCode => AUTH_FAIL_CODE,
         }
       end
-
       return JSON.generate(result);
     end
-
+=begin
+    NOT RELEASING WEBAPI CODE UNTIL WE HAVE ADMIN PASSWORD PROTECTION
     def self.add req, resp, cf, args
       ip = args[0]
       unless cf.check_address ip
@@ -141,5 +144,6 @@ module CfRestService
         return "#{ip} does not have access to ports: #{cf.dports}"
       end
     end
+=end
   end
 end
