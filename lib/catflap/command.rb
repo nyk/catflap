@@ -1,16 +1,37 @@
 require "catflap"
 require "catflap/http"
 
-class CatflapCli
+##
+# Command controller class.
+#
+# This class separates the implementation details of the command line
+# interface from the actual interface. This allows for creating custom
+# command tools by directly implementing this class.
+# @author Nyk Cowham <nykcowham@gmail.com>
+
+class CfCommand
   include CfWebserver
 
-  # Initialize catflap object
+  # Initialize a new CatflapCli object
+  # @param [Hash<String, String>] options an associative array of options
+  #   read from the configuration file built by Catflap::initialize_config().
+  # @return CatflapCli
+  # @see Catflap - options are generated from file: Catflap::initialize_config()
+
   def initialize options
       @options = options
       @cf = Catflap.new @options[:config_file], @options[:noop], @options[:verbose]
   end
 
-  def dispatchCommands command, arg
+  # A handler function to dispatch commands received from the front-end to the
+  # firewall driver class or the Catflap web service.
+  # @param [String] command the command that is to be executed.
+  # @param [String] arg and argument for the command, (e.g. an IP address).
+  # @return void
+  # @raise ArgumentError when a required command argument is missing.
+  # @raise NameError when the command is not recognized.
+
+  def dispatch_commands command, arg
     # handle commands and options.
     @cf.print_version if @options[:version]
 
@@ -45,7 +66,21 @@ class CatflapCli
     end
   end
 
+  # Handler function to read in a file of IP addresses and bulkload to the firewall..
+  #
+  # Checking that the file path points to readable file ensures that we can
+  # safely accept the user-submitted parameter without any additional data
+  # sanitization.
+  # @param [String] filepath the path to the bulkload file of IP addresses to add.
+  # @return void
+  # @raise IOError if the file cannot be found or is not readable.
+  #
+  # @note Every IP address in the file is validated to ensure that it resolves
+  #   to a valid IP address.
+  # @see Firewall Firewall::assert_valid_ipaddr(ip)
+
   def add_addresses_from_file! filepath
+
     if File.readable? filepath
       output = ""
       File.open(filepath, "r").each_line do |ip|

@@ -1,56 +1,128 @@
-catflap
+Catflap
 =======
 
-Creates a web accessible "cat flap" to open specific port connection to a web server by pinging a particular port. Catflap currently supports firewall rules using NetFilter (iptables) which is included as standard on most Linux distributions. It should work for Mac OS X systems, but only if iptables is installed with macports, etc. The intention is to add support for ipfw (native firewall for Mac OS X) in the very near future as a plugin. Currently there is no direct support for Microsoft Windows, other than those using cygwin or other Unix subshell installations. Further native support for Microsoft Windows is not planned by the author, but the plugin system for supporting ipfw/OSX could potentially be used by another developer who wishes to support a Windows plugin.
+Catflap provides firewall level protection of multiple ports with a password
+protected web gateway to allow developers and/or site demo/stage reviewers to
+request entry after providing valid authentication credentials. Currently Catflap
+supports Linux running the NetFilter (iptables) kernel-level firewall. However,
+firewall specific implementations are provided as firewall plugin drivers and it
+should be possible to write a separate plugin for the ipfw firewall on Mac OSX
+and other FreeBSD derivatives.
+
+Essentially, it is a more user-friendly form of "port knocking". The original
+proof-of-concept implementation was run for almost three years by Demotix, to
+protect development and staging servers from search engine crawlers and other
+unwanted traffic.
+
+# Use Cases
+- Prevent web-bots and spiders from crawling and indexing your development,
+  demo and staging servers. Since they are protected by a firewall there are no
+  back doors.
+- Provide a seamless login to sensitive web backends that may not have their own
+  complete user authentication enabled. One example is Kibana, used as a part of
+  the ELK logging service.
+- Allow non-technical people to request access through a firewall when they do
+  not have a static IP (e.g. from home office) and no access to a VPN.
+- Provides simple to use "port knocking" that does not require any technical
+  knowledge of command line networking from end users.
 
 # Installation
 Catflap is available as a ruby gem and can be installed with:
 
 ```
-gem install catflap --pre
+gem install catflap
 ```
 
-You may want to download the generic Linux init script (https://github.com/nyk/catflap/blob/master/etc/init.d/catflap) and place that in /etc/init.d/.
+You may also want to download the generic Linux init script
+(https://github.com/nyk/catflap/blob/master/etc/init.d/catflap) and place that
+in /etc/init.d/.
 
 # Configuration
-It is advisable to create a configuration file: /usr/local/etc/catflap.yaml (this is the default location referenced by the init script, but an be changed by passing the --config-file parameter to catflap.
+It is advisable to create a configuration file: /usr/local/etc/catflap.yaml
+(this is the default location referenced by the init script, but you can specify
+the location of your configuration file with the --config-file parameter to
+the catflap command line tool.
 
-This configuration file is a YAML file:
+This configuration file is a YAML file and the default configuration is listed
+below:
 
 ```YAML
 server:
-  port: 4777
+  listen_addr: '0.0.0.0'          # What ip address the catflap server should listen on.
+  port: 4777                      # The TCP port that the catflap server listens on.
+  docroot: './ui'                 # You can override the ui location.
+  endpoint: '/catflap'            # The endpoint for the REST API.
+  passfile: './etc/passfile.yaml' # Pass phrases are stored here in this file.
 
-rules:
-  chain: 'catflap-accept'
-  dports: '80,8080,443'
+firewall:
+  plugin: 'netfilter'             # Options are netfilter or iptables.
+  dports: '80,443'                # Lock multiple ports separating them by commas.
+  options:                        # Options are specific to each firewall plugin driver.
+    chain: 'CATFLAP'              # Two chains will be created <chain>-ALLOW & <chain>-DENY.
+    log_rejected: true            # Enable logging of rejected requests.
+    accept_local: true            # This is only set to false only when developers are testing catflap.
 ```
 
-The default listening port is 4777, but you are strongly urged to change this to something different. The rules chain is the name of the user-defined chain that iptables will be configured with to contain all the catflap firewall rules.
-
-The dports parameter tells catflap which ports should be blocked and guarded by catflap. By default, these are the common web port, 80 and 443. However, you can block other service ports such as SSH port 22 (be VERY careful how you do something like that!!) or an ftp port. Mutliple ports must be a string separated by commas with no spaces.
-
-Once your configuration is in place you will then want to install the rules and initialize catflap. This can be done with the command line:
+Once your configuration is in place you will then want to install the rules and
+initialize catflap. This can be done with the command line tool:
 
 ```
-catflap -f /usr/local/etc/catflap.yaml --install
+sudo catflap -f /etc/catflap.yaml install
 ```
 
-Catflap has a command line tool that you can use to add or remove addresses from the access chain and other household maintenance. Just run 'catflap -h' to see the options.
+Catflap has a command line tool that you can use to add or remove addresses from
+the access chain and other household maintenance. Just run 'catflap help' to see
+the available options.
 
-Now you will want to start the service. If you are using the init.d script this is easy:
+Now you will want to start the service. If you are using the init.d script this
+is easy:
 
 ```
 sudo service catflap start
 ```
 
-If not you will need to start it with the commandline directly (useful for testing and debugging issues):
+If not you will need to start it with the command line directly (useful for
+testing and debugging issues):
 ```
-sudo catflap -f /usr/local/etc/catflap.yaml --start-server
+sudo catflap -f /etc/catflap.yaml start
 ```
 
 # Gaining Access
-Addresses and address ranges can be added by the commandline using the '--add' option, but remote users can request that their current IP address be granted access by visiting the URL of the catflap service with their web-browser: http://<url>:4777/enter
+Addresses and address ranges can be added using the command line with the 'add'
+command, but remote users can request that their current IP address be granted
+access by visiting the URL of the website that is being catflapped with their
+web-browser. Catflap will redirect the target port (e.g. port 80) to the
+Catflap port (e.g. 4777), so they will see the Catflap login screen. Once they
+provide a valid pass phrase, their browser will refresh and they will see the
+target website.
 
-# Security
-Catflap is very low security! Anyone with the port and IP for your catflap service can gain full access to your protected ports. The main use case for catflap is to completely hide development, staging and test sites from crawlers, indexers and random access from outside, but to provide a convenient way for developers and other staff to open access on-demand without asking an admin to grant access. DO NOT rely on catflap to protect sensitive information or access to services that could be exploited! The roadmap (which exists in my head) does have improved security high on the list. Catflap lays in the 'convenience' end of the convenience vs. security trade-off spectrum.
+This is the default configuration, provided by the 'netfilter'
+driver, which uses NAT on the firewall to forward the ports. You can use the
+'ipfilter' driver instead, if you want to reject or drop packets rather than
+automatically redirect to the Catflap login. The user would instead have to go
+to the Catflap URL directly. However, the default 'netfilter' driver is
+recommended if you want the best and most seamless end-user experience.
+
+# Security considerations
+Although we have been careful to avoid application level security vulnerabilities,
+such as shell injection attacks, and no web user submitted data is passed to the
+operating system without being sanitized (i.e. IP addresses are validated as being
+valid IP addresses before being sent to the firewall interface), there are still
+some areas of security concern to be aware of:
+- The web service must run with root privileges, at the very least be run sudo
+  as a user with root privileges to add rules to the firewall. Such privileges are
+  unavoidable because the firewall runs in the kernel of the operating system.
+  It may be possible in the future to run the web server as a non-privileged
+  user and to queue firewall requests through a small proxy micro-service that
+  runs will expanded privileges.
+- The pass phrases in the passfile.yaml file are not encrypted. This file should
+  be placed in a private directly and read only by root. If an unauthorized user
+  can read that file, then you have larger security problems than Catflap :)
+- Unless you use SSL encryption it is possible for a network sniffer to capture
+  a valid token and possibly reuse the token to open the port for their own IP
+  address. This risk is very much lessened by the use of timestamps to expire
+  authentication tokens, but there is still some potential risk exposure. That
+  risk is eliminated entirely by encrypting traffic with TLS/SSL.
+- It is recommended to flush the Catflap access rules every day or so (e.g. using
+  a cron job that calls 'sudo catflap purge' command). This is analogous to expiring
+  user login sessions.

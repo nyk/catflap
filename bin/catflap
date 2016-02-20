@@ -2,7 +2,7 @@
 $:.unshift File.expand_path("../../lib", __FILE__)
 
 require "optparse"
-require "catflap/cli"
+require "catflap/command"
 
 # Parse options
 options = {}
@@ -40,12 +40,14 @@ optparse = OptionParser.new do |opts|
     exit 0
   end
 end.parse! ARGV # the options are stripped from ARGV after parsing.
-command, arg = ARGV # destructure what is left.
+command, arg = ARGV # destructure what is left into a command and its arguments.
 
-cli = CatflapCli.new options # create and initialize a command line controller object.
+cli = CfCommand.new options # create and initialize a command line controller object.
 
 begin
-  status = cli.dispatchCommands command, arg # pass command and arg to command dispatcher.
+  # pass command and arg to command dispatcher.
+  status = cli.dispatch_commands command, arg
+
   if command == 'check'
     if status
       puts "The ip '#{arg}' has access GRANTED"

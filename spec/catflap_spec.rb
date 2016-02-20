@@ -30,11 +30,11 @@ describe Catflap do
 
   it 'can print install rules' do
     rules = <<RULES
-iptables -N CATFLAP
-iptables -A CATFLAP -s 127.0.0.1 -p tcp -m multiport --dports 80,443 -j ACCEPT
-iptables -A INPUT -p tcp -m multiport --dports 80,443 -j CATFLAP
-iptables -A INPUT -p tcp -m multiport --dports 80,443 -j LOG
-iptables -A INPUT -p tcp -m multiport --dports 80,443 -j REJECT
+iptables -N CATFLAP-ALLOW
+iptables -N CATFLAP-DENY
+iptables -A INPUT -p tcp -m multiport --dports 80,443 -j CATFLAP-ALLOWiptables -A INPUT -p tcp -m multiport --dports 80,443 -j CATFLAP-DENYiptables -A CATFLAP-ALLOW -s 127.0.0.1 -p tcp -m multiport --dports 80,443 -j ACCEPT
+iptables -A CATFLAP-DENY -p tcp -m multiport --dports 80,443 -j LOG
+iptables -A CATFLAP-DENY -p tcp -m multiport --dports 80,443 -j REJECT
 RULES
     expect{@cf.firewall.install_rules!}.to output(rules).to_stdout
   end
@@ -42,30 +42,31 @@ RULES
   it 'can print uninstall rules' do
     @cf.verbose = true
     rules = <<RULES
-iptables -D INPUT -p tcp -m multiport --dports 80,443 -j CATFLAP
-iptables -F CATFLAP
-iptables -X CATFLAP
-iptables -D INPUT -p tcp -m multiport --dports 80,443 -j LOG
-iptables -D INPUT -p tcp -m multiport --dports 80,443 -j REJECT
+iptables -D INPUT -p tcp -m multiport --dports 80,443 -j CATFLAP-ALLOW
+iptables -D INPUT -p tcp -m multiport --dports 80,443 -j CATFLAP-DENY
+iptables -F CATFLAP-ALLOW
+iptables -X CATFLAP-ALLOW
+iptables -F CATFLAP-DENY
+iptables -X CATFLAP-DENY
 RULES
     expect{@cf.firewall.uninstall_rules!}.to output(rules).to_stdout
   end
 
   it 'can print purge rules' do
     @cf.verbose = true
-    rules = "iptables -F CATFLAP\n"
+    rules = "iptables -F CATFLAP-ALLOW\n"
     expect{@cf.firewall.purge_rules!}.to output(rules).to_stdout
   end
 
   it 'can print add address rules' do
     @cf.verbose = true
-    rules = "iptables -I CATFLAP 1 -s 127.0.0.1 -p tcp -m multiport --dports 80,443 -j ACCEPT\n"
+    rules = "iptables -I CATFLAP-ALLOW 1 -s 127.0.0.1 -p tcp -m multiport --dports 80,443 -j ACCEPT\n"
     expect{@cf.firewall.add_address! "127.0.0.1"}.to output(rules).to_stdout
   end
 
   it 'can print delete address rules' do
     @cf.verbose = true
-    rules = "iptables -D CATFLAP -s 127.0.0.1 -p tcp -m multiport --dports 80,443 -j ACCEPT\n"
+    rules = "iptables -D CATFLAP-ALLOW -s 127.0.0.1 -p tcp -m multiport --dports 80,443 -j ACCEPT\n"
     expect{@cf.firewall.delete_address! "127.0.0.1"}.to output(rules).to_stdout
   end
 end

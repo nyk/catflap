@@ -3,9 +3,19 @@ require 'webrick'
 require 'json'
 include WEBrick
 
+##
+# Module to implement a WEBrick web server.
+#
+# @author Nyk Cowham <nykcowham@gmail.com>
+
 module CfWebserver
   # Add a mime type for *.rhtml files
   HTTPUtils::DefaultMimeTypes.store('rhtml', 'text/html')
+
+  # Factory method to generate a new WEBrick server.
+  # @param [String] bind_addr the IP address to listen on (e.g. 0.0.0.0).
+  # @param [String] port the port to listen on (e.g. 4777).
+  # @return void
 
   def generate_server bind_addr, port
     config = {:BindAddress => bind_addr, :Port => port}
@@ -17,6 +27,10 @@ module CfWebserver
     server.start
   end
 
+  # Method to start the WEBrick web server.
+  # @param [Catflap] cf a fully instantiated Catflap object.
+  # @return void
+
   def server_start cf
     generate_server(cf.bind_addr, cf.port) do |server|
       server.mount '/catflap', CfApiServlet, cf
@@ -24,12 +38,27 @@ module CfWebserver
     end
   end
 
+  ##
+  # A WEBrick servlet class to handle API requrests
+  # @author Nyk Cowham <nykcowham@gmail.com>
+
   class CfApiServlet < HTTPServlet::AbstractServlet
+
+    # Initializer to construct a new CfApiServlet object.
+    # @param [HTTPServer] server a WEBrick HTTP server object.
+    # @param [Catflap] cf a fully instantiated Catflap object.
+    # @return void
 
     def initialize server, cf
       super server
       @cf = cf
     end
+
+    # Implementation of HTTPServlet::AbstractServlet method to handle GET method
+    # requests.
+    # @param [HTTPRequest] req a WEBrick::HTTPRequest object.
+    # @param [HTTPResponse] resp a WEBrick::HTTPResponse object.
+    # @return void
 
     def do_GET req, resp
       # Split the path into piece
@@ -75,11 +104,26 @@ module CfWebserver
   end
 end
 
+##
+# REST service to handle REST requests from CfApiServlet.
+# @author Nyk Cowham <nykcowham@gmail.com>
+
 module CfRestService
+
+  # REST service handler Class
+
   class CfRestService
 
+    # Numeric response code indicating a failed authentication attempt.
     AUTH_FAIL_CODE = 401;
+    # Numeric response code indicating a successful authentication attempt.
     AUTH_PASS_CODE = 200;
+
+    # Handler method for handling knock requests for authentication.
+    # @param [WEBRick::HTTPRequest] req a WEBrick request object.
+    # @param [WEBrick::HTTPResponse] resp a WEBrick response object.
+    # @param [Catflap] cf a fully instantiated Catflap object.
+    # @return void
 
     def self.knock req, resp, cf
       authenticated = false

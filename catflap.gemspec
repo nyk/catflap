@@ -7,7 +7,12 @@ Gem::Specification.new do |s|
   s.name        = 'catflap'
   s.version     = Catflap::VERSION
   s.summary     = 'Manage NetFilter-based rules to grant port access on-demand via commandline or REST API requests.'
-  s.description = 'A simple solution to provide on-demand service access (e.g. port 80 on webserver), where a more robust and secure VPN solution is not available.'
+  s.description = 'A simple solution to provide on-demand service access (e.g. port 80
+  on webserver), where a more robust and secure VPN solution is not available.
+  Essentially, it is a more user-friendly form of "port knocking". The original
+  proof-of-concept implementation was run for almost three years by Demotix, to
+  protect development and staging servers from search engine crawlers and other
+  unwanted traffic.'
   s.authors     = ['Nyk Cowham']
   s.email       = 'nykcowham@gmail.com'
   s.homepage	= 'https://github.com/nyk/catflap'
