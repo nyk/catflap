@@ -1,13 +1,29 @@
+# coding: utf-8
+lib = File.expand_path('../lib', __FILE__)
+$LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
+require 'catflap/version'
+
 Gem::Specification.new do |s|
   s.name        = 'catflap'
-  s.version     = '0.0.2'
+  s.version     = Catflap::VERSION
   s.summary     = 'Manage NetFilter-based rules to grant port access on-demand via commandline or REST API requests.'
-  s.description = 'A simple solution to provide on-demand service access (e.g. port 80 on webserver), where a more robust and secure VPN solution is not available.'
+  s.description = 'A simple solution to provide on-demand service access (e.g. port 80
+  on webserver), where a more robust and secure VPN solution is not available.
+  Essentially, it is a more user-friendly form of "port knocking". The original
+  proof-of-concept implementation was run for almost three years by Demotix, to
+  protect development and staging servers from search engine crawlers and other
+  unwanted traffic.'
   s.authors     = ['Nyk Cowham']
-  s.email       = 'nyk@demotix.com'
-  s.files 	= ['lib/catflap.rb', 'lib/catflap-http.rb', 'bin/catflap']
+  s.email       = 'nykcowham@gmail.com'
+  s.homepage	= 'https://github.com/nyk/catflap'
+  s.files 	= `git ls-files -z`.split("\x0").reject { |f| f.match(%r{^(test|spec|tasks|features)/}) }
   s.executables = ['catflap']
   s.licenses	= ['MIT']
   s.requirements = 'NetFilters (iptables) installed and working.'
-  s.homepage	= 'https://github.com/nyk/catflap'
+  s.require_paths = ["lib"]
+  s.add_dependency 'json', '>= 1.8.3'
+  s.add_development_dependency "bundler", "~> 1.11"
+  s.add_development_dependency "rake", "~> 10.0"
+  s.add_development_dependency "rspec", "~> 3.0"
+  s.bindir = 'bin'
 end

@@ -1,0 +1,7 @@
+# This is a sample passfile. It is recommened that you use your own
+# pass phrases. A pass phrase must consist of at least two words separated by
+# a space. The first word of the phrase is used as a unique key for efficient
+# lookup of multiple pass phrases.
+passphrases:
+  frisky: 'frisky kitten'
+  peeky: 'peeky blinders'
