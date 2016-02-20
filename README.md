@@ -1,5 +1,6 @@
 Catflap
 =======
+[[https://github.com/nyk/catflap/blob/master/ui/images/catflap.png|alt=Catflap]]
 
 Catflap provides firewall level protection of multiple ports with a password
 protected web gateway to allow developers and/or site demo/stage reviewers to
@@ -112,13 +113,13 @@ some areas of security concern to be aware of:
 - The web service must run with root privileges, at the very least be run sudo
   as a user with root privileges to add rules to the firewall. Such privileges are
   unavoidable because the firewall runs in the kernel of the operating system.
-  It may be possible in the future to run the web server as a non-privileged
-  user and to queue firewall requests through a small proxy micro-service that
-  runs will expanded privileges.
+  A future release will separate the firewall execution process from the web
+  server, so the web server will run as an unprivileged user and only the
+  'Executor' process will run with higher privileges on an internal TCP network.
 - The pass phrases in the passfile.yaml file are not encrypted. This file should
-  be placed in a private directly and read only by root. If an unauthorized user
+  be placed in a private directory owned by root, chmod 600. If an unauthorized user
   can read that file, then you have larger security problems than Catflap :)
-- Unless you use SSL encryption it is possible for a network sniffer to capture
+- Unless you use SSL encryption it is not easy, but possible, for a network sniffer to capture
   a valid token and possibly reuse the token to open the port for their own IP
   address. This risk is very much lessened by the use of timestamps to expire
   authentication tokens, but there is still some potential risk exposure. That
@@ -126,3 +127,7 @@ some areas of security concern to be aware of:
 - It is recommended to flush the Catflap access rules every day or so (e.g. using
   a cron job that calls 'sudo catflap purge' command). This is analogous to expiring
   user login sessions.
+- If you want to revoke access on a particular pass phrase, you must remove the
+  pass phrase from the passfile and ALSO flush the CATFLAP-ALLOW firewall chain, by
+  using the 'catflap purge' command, or remove each IP address with the
+  'catflap revoke <ip>' command.
