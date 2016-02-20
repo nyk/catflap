@@ -20,7 +20,7 @@ class Catflap
   # @!attribute [r] bind_addr
   #   @return [String] the IP address the Catflap server should listen to.
   # @!attribute [r] port
-  #   @return [String] the port number the Catflap server should listen to.
+  #   @return [Integer] the port number the Catflap server should listen to.
   # @!attribute [r] docroot
   #   @return [String] the file path location that HTML/CSS/JS files are located.
   # @!attribute [r] endpoint
@@ -33,6 +33,8 @@ class Catflap
   #     non-alphanumeric character (except for the underscore).
   # @!attribute [r] passfile
   #   @return [String] file path of the YAML file containg pass phrases.
+  # @!attribute [r] token_ttl
+  #   @return [Integer] the time-to-live in seconds before tokens expire.
   # @!attribute [r] redirect_url
   #   @return [String] a URL the browser should be redirect to after authentication.
   # @!attribute [r] firewall
@@ -41,7 +43,7 @@ class Catflap
 
   attr_accessor :verbose, :noop
   attr_reader :fwplugin, :bind_addr, :port, :docroot, :endpoint, :dports, \
-              :passfile, :passphrases, :redirect_url, :firewall
+              :passfile, :passphrases, :token_ttl, :redirect_url, :firewall
 
   # @param [String, nil] file_path file path of the YAML configuration file.
   # @param [Boolean] noop set to true to suppress destructive operations (no-operation).
@@ -74,6 +76,7 @@ class Catflap
     @docroot = @config['server']['docroot']
     @endpoint = @config['server']['endpoint']
     @passfile = @config['server']['passfile']
+    @token_ttl = @config['server']['token_ttl']
     @redirect_url = @config['server']['redirect_url'] || nil
     @fwplugin = @config['firewall']['plugin']
     @dports = @config['firewall']['dports']

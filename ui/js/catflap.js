@@ -30,38 +30,51 @@
         return;
       }
 
-      // Construct our data packet to send to the server.
-      var data = {
-        "_key" : matches[1],
-        "random" : Math.floor(Math.random()*100000)
-      };
-      data.token = Sha256.hash(pass + data.random);
-
+      // Handshake with the Catflap server by requesting a timestamp.
+      ts = 0;
       $.ajax({
-        url: '/catflap/knock',
-        data: data,
+        url: '/catflap/sync',
         success: function(jsonData){
           data = JSON.parse(jsonData);
-          hostname = null;
-          console.log(data);
-          switch (data.StatusCode) {
-            case 200:
-              if (data.RedirectUrl == "reload") {
-                location.reload(true);
-              } else {
-                $(location).attr('href', data.RedirectUrl);
+          ts = data.Timestamp;
+
+          // Construct our data packet to send to the server.
+          var data = {
+            "_key" : matches[1],
+            "ts" : ts
+          };
+          data.token = Sha256.hash(pass + ts);
+
+          $.ajax({
+            url: '/catflap/knock',
+            data: data,
+            success: function(jsonData){
+              data = JSON.parse(jsonData);
+
+              switch (data.StatusCode) {
+                case 200:
+                  if (data.RedirectUrl == "reload") {
+                    location.reload(true);
+                  } else {
+                    $(location).attr('href', data.RedirectUrl);
+                  }
+                  break;
+                default:
+                  $('#passphrase').addClass('failed');
+                  $('#locked-message').hide();
+                  $('#failed-message').show();
+                  break;
               }
-              break;
-            default:
-              $('#passphrase').addClass('failed');
-              $('#locked-message').hide();
-              $('#failed-message').show();
-              break;
-          }
+            }
+          })
+          .fail(function(jsonData){
+            console.log('Unable to authenticate with the server: ' + jsonData);
+          });
         }
       })
-      .fail(function(){
-        alert(data._key);
+      .fail(function(jsonData){
+        console.log('Sync handshake failed: ' + jsonData);
+        return;
       });
 
     }
