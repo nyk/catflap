@@ -60,7 +60,7 @@ module CfWebserver
     # @param [HTTPResponse] resp a WEBrick::HTTPResponse object.
     # @return void
 
-    def do_GET req, resp
+    def do_POST req, resp
       # Split the path into piece
       path = req.path[1..-1].split('/')
 

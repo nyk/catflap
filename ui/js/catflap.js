@@ -34,6 +34,7 @@
       ts = 0;
       $.ajax({
         url: '/catflap/sync',
+        method: 'POST',
         success: function(jsonData){
           data = JSON.parse(jsonData);
           ts = data.Timestamp;
@@ -47,6 +48,7 @@
 
           $.ajax({
             url: '/catflap/knock',
+            method: 'POST',
             data: data,
             success: function(jsonData){
               data = JSON.parse(jsonData);
