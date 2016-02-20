@@ -1,6 +1,6 @@
 Catflap
 =======
-[[https://raw.githubusercontent.com/nyk/catflap/master/ui/images/catflap.png]]
+![alt catflap](https://raw.githubusercontent.com/nyk/catflap/master/ui/images/catflap.png)
 
 Catflap provides firewall level protection of multiple ports with a password
 protected web gateway to allow developers and/or site demo/stage reviewers to
