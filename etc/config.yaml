@@ -1,0 +1,19 @@
+# This is an example of the main configuration file for catflap.
+# By default catflap looks for this file in /usr/local/etc/catflap/config.yaml
+# but you can change the location by using the --config-file <filepath> option
+# of the bin/catflap command line interface.
+
+server:
+  listen_addr: '0.0.0.0' # what ip address the catflap server should listen on.
+  port: 4777 # the TCP port that the catflap server listens on.
+  docroot: './ui' # you can override the ui location.
+  endpoint: '/catflap' # the endpoint for the REST API.
+  passfile: './etc/passfile.yaml' # pass phrases are stored here.
+
+firewall:
+  plugin: 'netfilter' # options are netfilter or iptables
+  dports: '80,443' # lock multiple ports separating them by commas.
+  options: # options are specific to each firewall plugin driver.
+    chain: 'CATFLAP'
+    log_rejected: true
+    accept_local: false # this is only set to false only when devs are testing catflap.
