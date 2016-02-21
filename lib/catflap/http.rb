@@ -60,7 +60,7 @@ module CfWebserver
     # @param [HTTPResponse] resp a WEBrick::HTTPResponse object.
     # @return void
 
-    def do_GET req, resp
+    def do_POST req, resp
       # Split the path into piece
       path = req.path[1..-1].split('/')
 
@@ -78,6 +78,10 @@ module CfWebserver
           response_method = path[1].to_sym
           # Make sure the method exists in the class
           raise HTTPStatus::NotFound if !response_class.respond_to? response_method
+
+          if :sync == response_method
+            resp.body = response_class.send response_method, req, resp, @cf
+          end
 
           if :knock == response_method
             resp.body = response_class.send response_method, req, resp, @cf
@@ -114,10 +118,32 @@ module CfRestService
 
   class CfRestService
 
+    # Numeric response code indicating that the token has expired.
+    STATUS_TOKEN_EXPIRED = 405;
+    # Numeric response code indicating that the handshake was ok.
+    STATUS_SYNC_OK = 200;
     # Numeric response code indicating a failed authentication attempt.
-    AUTH_FAIL_CODE = 401;
+    STATUS_AUTH_FAIL = 401;
     # Numeric response code indicating a successful authentication attempt.
-    AUTH_PASS_CODE = 200;
+    STATUS_AUTH_PASS = 200;
+
+    # Handler method for handling sync/timestamp requests for handshaking.
+    #
+    # This is a handshake request from the browser for a timestamp to use
+    # to encrypt the pass phrase. This timestamp is passed back along with the
+    # pass phrase. If the timestamp is older than the expiry then the token
+    # will be rejected. If the timestamp has not expired it will be used to
+    # generate a matching token for authentication.
+    # @return [Integer] an integer representation of a unix timestamp.
+
+    def self.sync req, resp, cf
+      result = {
+        :Status => "Handshake sync OK",
+        :StatusCode => STATUS_SYNC_OK,
+        :Timestamp => Time.new.to_i
+      }
+      return JSON.generate(result)
+    end
 
     # Handler method for handling knock requests for authentication.
     # @param [WEBRick::HTTPRequest] req a WEBrick request object.
@@ -131,9 +157,21 @@ module CfRestService
       query = req.query()
       passkey = query['_key']
 
+      # Calculate difference between the timestamp sent to the client and
+      # the current timestamp.
+      ts_delta = Time.new.to_i - query['ts'].to_i
+
+      if ts_delta > cf.token_ttl
+        result = {
+          :Status => "Expired Token",
+          :StatusCode => STATUS_TOKEN_EXPIRED
+        }
+        return JSON.generate(result)
+      end
+
       # If we have a matching key in the passfile then create a test token.
       if cf.passphrases[query['_key']] != nil
-        test_token = cf.generate_token(cf.passphrases[passkey], query['random'])
+        test_token = cf.generate_token(cf.passphrases[passkey], query['ts'])
       end
 
       # by default we tell the browser to reload the page, but we can configure
@@ -149,45 +187,18 @@ module CfRestService
 
         result = {
           :Status => "Authenticated",
-          :StatusCode => AUTH_PASS_CODE,
+          :StatusCode => STATUS_AUTH_PASS,
           :RedirectUrl => redirect_url
         }
 
       else
         result = {
           :Status => "Authentication failed",
-          :StatusCode => AUTH_FAIL_CODE,
+          :StatusCode => STATUS_AUTH_FAIL,
         }
       end
       return JSON.generate(result);
     end
-=begin
-    NOT RELEASING WEBAPI CODE UNTIL WE HAVE ADMIN PASSWORD PROTECTION
-    def self.add req, resp, cf, args
-      ip = args[0]
-      unless cf.check_address ip
-        cf.add_address! ip
-        return "#{ip} has been granted access"
-      else
-        return "#{ip} already has access"
-      end
-    end
 
-    def self.remove req, resp, cf, args
-      ip = args[0]
-      cf.delete_address! ip
-      return "Access granted to #{ip} has been revoked"
-    end
-
-    def self.check req, resp, cf, args
-      ip = args[0]
-
-      if cf.check_address ip
-        return "#{ip} has access to ports: #{cf.dports}"
-      else
-        return "#{ip} does not have access to ports: #{cf.dports}"
-      end
-    end
-=end
   end
 end

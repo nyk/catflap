@@ -54,6 +54,7 @@ server:
   docroot: './ui'                 # You can override the ui location.
   endpoint: '/catflap'            # The endpoint for the REST API.
   passfile: './etc/passfile.yaml' # Pass phrases are stored here in this file.
+  token_ttl: 15                   # Expire tokens after 15 seconds.
 
 firewall:
   plugin: 'netfilter'             # Options are netfilter or iptables.
