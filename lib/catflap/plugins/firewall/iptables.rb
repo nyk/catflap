@@ -1,3 +1,4 @@
+require 'catflap/plugins/firewall/plugin'
 require 'catflap/firewall'
 
 ##
@@ -16,7 +17,7 @@ require 'catflap/firewall'
 #
 # @author Nyk Cowham <nykcowham@gmail.com>
 
-class Iptables
+class Iptables < FirewallPlugin
   include Firewall # Mixin to give us the execute! method
 
   # Initialize the driver class.

@@ -8,6 +8,9 @@ require "catflap/command"
 options = {}
 optparse = OptionParser.new do |opts|
   opts.banner = ""
+  opts.on('-d', '--daemonize', 'Run the Catflap services as background processes') do
+    options[:daemonize] = true
+  end
   opts.on('-f', '--config-file <filepath>', String, 'Use config file to override default values') do |filepath|
     options[:config_file] = filepath
   end
@@ -23,11 +26,11 @@ optparse = OptionParser.new do |opts|
   opts.on('-h', '--help', 'Print this help page.') do
     puts "Usage: catflap <command> [<arg>]\n\n"
     puts "Commands:"
-    puts "\tstart \t\t\t Start the catflap server"
-    puts "\tstop \t\t\t Stop the catflap server"
-    puts "\trestart \t\t Stop and restart the catflap server"
+    puts "\tstart [https]\t\t\t Start a catflap server"
+    puts "\tstop [https]\t\t\t Stop a catflap server"
+    puts "\trestart [https]\t\t\t Restart a catflap server"
     puts "\treload \t\t\t Reload the pass phrases without restarting the server"
-    puts "\tstatus \t\t\t Display the status of the catflap server"
+    puts "\tstatus [https]\t\t\t Display the status of a catflap server"
     puts "\tinstall \t\t Install and initialize the catflap rule chain"
     puts "\tuninstall \t\t Uninstall catflap rules from firewall"
     puts "\tcheck <ip> \t\t Check if <ip> already has access"
@@ -48,11 +51,21 @@ begin
   # pass command and arg to command dispatcher.
   status = cli.dispatch_commands command, arg
 
-  if command == 'check'
+  puts status if command == "version"
+
+  if command == "check"
     if status
       puts "The ip '#{arg}' has access GRANTED"
     else
       puts "The ip '#{arg}' does NOT have access"
+    end
+  end
+
+  if command == "status"
+    if status[:pid] > 0
+      puts "Server listening on #{status[:address]}:#{status[:port]} <pid:#{status[:pid].to_s.chomp}>"
+    else
+      puts "Server is not running on #{status[:address]}:#{status[:port]}"
     end
   end
 

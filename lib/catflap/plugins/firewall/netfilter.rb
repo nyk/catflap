@@ -1,3 +1,4 @@
+require 'catflap/plugins/firewall/plugin'
 require 'catflap/firewall'
 
 ##
@@ -14,7 +15,7 @@ require 'catflap/firewall'
 #
 # @author Nyk Cowham <nykcowham@gmail.com>
 
-class Netfilter
+class Netfilter < FirewallPlugin
   include Firewall
 
   # Initialize the driver class.

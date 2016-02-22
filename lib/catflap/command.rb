@@ -21,6 +21,7 @@ class CfCommand
   def initialize options
       @options = options
       @cf = Catflap.new @options[:config_file], @options[:noop], @options[:verbose]
+      @cf.daemonize = @options[:daemonize]
   end
 
   # A handler function to dispatch commands received from the front-end to the
@@ -33,11 +34,23 @@ class CfCommand
 
   def dispatch_commands command, arg
     # handle commands and options.
-    @cf.print_version if @options[:version]
+    #@cf.print_version if @options[:version]
 
     case command
+    when "version"
+      "Catflap version #{Catflap::VERSION}"
     when "start"
-      server_start @cf
+      server_start @cf, (arg == 'https')
+    when "stop"
+      server_stop @cf, (arg == 'https')
+    when "status"
+      server_status @cf, (arg == 'https')
+    when "restart"
+      begin
+        https = (arg == 'https')
+        server_stop @cf, https
+        server_start @cf, https
+      end
     when "reload"
       @cf.load_passphrases
     when "purge"
