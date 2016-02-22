@@ -25,6 +25,10 @@ class Catflap
   #   @return [String] the file path location that HTML/CSS/JS files are located.
   # @!attribute [r] endpoint
   #   @return [String] the name of the REST service endpoint (e.g. /catflap).
+  # @!attribute [r] https
+  #   @return [Hash<Symbol, String>] the HTTPS server configuration options.
+  # @!attribute [r] daemonize
+  #   @return [Boolean] true if the web server should run in the background.
   # @!attribute [r] dports
   #   @return [String] comma-separated list of ports to guard. (e.g. '80,443').
   # @!attribute [r] passphrases
@@ -35,15 +39,18 @@ class Catflap
   #   @return [String] file path of the YAML file containg pass phrases.
   # @!attribute [r] token_ttl
   #   @return [Integer] the time-to-live in seconds before tokens expire.
+  # @!attribute [r] pid_path
+  #   @return [String] the path to the directory where the pid file should be written.
   # @!attribute [r] redirect_url
   #   @return [String] a URL the browser should be redirect to after authentication.
   # @!attribute [r] firewall
   #   @return [Object, #install_rules!, #uninstall_rules!, #add_address!, #delete_address!, #purge_rules!, #list_rules, #check_address]
   #     a firewall object that is implemented by the firewall driver plugin.
 
-  attr_accessor :verbose, :noop
+  attr_accessor :verbose, :noop, :daemonize
   attr_reader :fwplugin, :bind_addr, :port, :docroot, :endpoint, :dports, \
-              :passfile, :passphrases, :token_ttl, :redirect_url, :firewall
+              :passfile, :passphrases, :token_ttl, :pid_path, :redirect_url, \
+              :firewall, :https
 
   # @param [String, nil] file_path file path of the YAML configuration file.
   # @param [Boolean] noop set to true to suppress destructive operations (no-operation).
@@ -71,15 +78,17 @@ class Catflap
       raise IOError, "Cannot read configuration file: #{file_path}"
     end
 
-    @bind_addr = @config['server']['listen_addr']
-    @port = @config['server']['port']
-    @docroot = @config['server']['docroot']
-    @endpoint = @config['server']['endpoint']
-    @passfile = @config['server']['passfile']
-    @token_ttl = @config['server']['token_ttl']
+    @bind_addr = @config['server']['listen_addr'] || '0.0.0.0'
+    @port = @config['server']['port'] || 8778
+    @docroot = @config['server']['docroot'] || './ui'
+    @endpoint = @config['server']['endpoint'] || '/catflap'
+    @passfile = @config['server']['passfile'] || './etc/passfile.yaml'
+    @token_ttl = @config['server']['token_ttl'] || 15
+    @pid_path = @config['server']['pid_path'] || '/var/run'
     @redirect_url = @config['server']['redirect_url'] || nil
-    @fwplugin = @config['firewall']['plugin']
-    @dports = @config['firewall']['dports']
+    @https = @config['server']['https'] || {}
+    @fwplugin = @config['firewall']['plugin'] || 'netfilter'
+    @dports = @config['firewall']['dports'] || '80,443'
   end
 
   # Initialize the firewall plugin driver.
@@ -101,13 +110,6 @@ class Catflap
     else
       raise IOError, "Cannot read the passfile: #{@passfile}!"
     end
-  end
-
-  # Prints version information to stdout stream.
-  # @return void
-
-  def print_version
-    puts "Catflap version #{Catflap::VERSION}"
   end
 
   # Generates a SHA256 encrypted token based on a passphrase and a timestamp
