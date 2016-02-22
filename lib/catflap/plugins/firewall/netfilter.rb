@@ -30,6 +30,7 @@ class Netfilter < FirewallPlugin
     @catflap_port = config['server']['port']
     @dports = config['firewall']['dports']
     @chain = config['firewall']['options']['chain'] || 'CATFLAP'
+    @forward = config['firewall']['options']['forward']
     @log_rejected = config['firewall']['options']['log_rejected'] || false
     @accept_local = config['firewall']['options']['accept_local'] || false
     @chain_allow = @chain + '-ALLOW'
@@ -47,7 +48,10 @@ class Netfilter < FirewallPlugin
     output << "iptables -t nat -A PREROUTING -p tcp -m multiport --dport #{@dports} -j #{@chain_allow}\n"
     output << "iptables -t nat -A PREROUTING -p tcp -m multiport --dport #{@dports} -j #{@chain_deny}\n"
     output << "iptables -t nat -A #{@chain_deny} -p tcp -m multiport --dport #{@dports} -j LOG\n" if @log_rejected
-    output << "iptables -t nat -A #{@chain_deny} -p tcp -m multiport --dport #{@dports} -j REDIRECT --to-port #{@catflap_port}\n"
+
+    @forward.each do | key, value |
+      output << "iptables -t nat -A #{@chain_deny} -p tcp --dport #{key} -j REDIRECT --to-port #{value}\n"
+    end
 
     unless @accept_local
       output << "iptables -t nat -A OUTPUT -o lo -p tcp -m multiport --dport #{@dports} -j #{@chain_allow}\n"

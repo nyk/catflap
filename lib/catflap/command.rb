@@ -34,22 +34,19 @@ class CfCommand
 
   def dispatch_commands command, arg
     # handle commands and options.
-    #@cf.print_version if @options[:version]
-
     case command
     when "version"
       "Catflap version #{Catflap::VERSION}"
     when "start"
-      server_start @cf, (arg == 'https')
+      server_start @cf, @options[:https]
     when "stop"
-      server_stop @cf, (arg == 'https')
+      server_stop @cf, @options[:https]
     when "status"
-      server_status @cf, (arg == 'https')
+      server_status @cf, @options[:https]
     when "restart"
       begin
-        https = (arg == 'https')
-        server_stop @cf, https
-        server_start @cf, https
+        server_stop @cf, @options[:https]
+        server_start @cf, @options[:https]
       end
     when "reload"
       @cf.load_passphrases
