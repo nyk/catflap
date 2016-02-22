@@ -44,23 +44,24 @@ class Catflap
   # @!attribute [r] redirect_url
   #   @return [String] a URL the browser should be redirect to after authentication.
   # @!attribute [r] firewall
-  #   @return [Object, #install_rules!, #uninstall_rules!, #add_address!, #delete_address!, #purge_rules!, #list_rules, #check_address]
+  #   @return [FirewallPlugin]
   #     a firewall object that is implemented by the firewall driver plugin.
 
   attr_accessor :verbose, :noop, :daemonize
-  attr_reader :fwplugin, :bind_addr, :port, :docroot, :endpoint, :dports, \
-              :passfile, :passphrases, :token_ttl, :pid_path, :redirect_url, \
-              :firewall, :https
+
+  attr_reader :fwplugin, :bind_addr, :port, :docroot, :endpoint, :dports,
+    :passfile, :passphrases, :token_ttl, :pid_path, :redirect_url, :firewall,
+    :https
 
   # @param [String, nil] file_path file path of the YAML configuration file.
   # @param [Boolean] noop set to true to suppress destructive operations (no-operation).
   # @param [Boolean] verbose set to true to print operations to standard out stream.
   # @return [Catflap]
 
-  def initialize( file_path = nil, noop = false, verbose = false )
+  def initialize(file_path = nil, noop = false, verbose = false)
     @noop = noop
     @verbose = verbose
-    initialize_config file_path # TODO: integrate Configliere
+    initialize_config file_path # TODO: integrate Configliere?
     initialize_firewall_plugin
     load_passphrases
   end
@@ -69,7 +70,7 @@ class Catflap
   # @param [String, nil] file_path file path of the YAML configuration file.
   # @return void
 
-  def initialize_config( file_path = nil )
+  def initialize_config(file_path = nil)
     file_path = file_path || "etc/config.yaml" # default config
 
     if File.readable? file_path
@@ -92,11 +93,12 @@ class Catflap
   end
 
   # Initialize the firewall plugin driver.
-  # @return void
+  # @return [FirewallPlugin] an object of a class inheriting from FirewallPlugin
 
   def initialize_firewall_plugin
     require_relative "catflap/plugins/firewall/#{@fwplugin}.rb"
-    @firewall = Object.const_get(@fwplugin.capitalize).new @config, @noop, @verbose
+    @firewall =
+      Object.const_get(@fwplugin.capitalize).new @config, @noop, @verbose
   end
 
   # Load the pass phrase YAML file.

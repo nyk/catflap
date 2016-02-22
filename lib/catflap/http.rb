@@ -1,7 +1,5 @@
 require 'catflap'
 require 'webrick'
-require 'webrick/https'
-require 'openssl'
 require 'json'
 include WEBrick
 
@@ -30,11 +28,24 @@ module CfWebserver
       :BindAddress => cf.bind_addr,
       :Port => port,
       :DocumentRoot => docroot,
+      :StartCallback => lambda do
+        if File.writable? cf.pid_path
+          File.open(get_pidfile(cf, https), "w") do | f |
+            f.puts Process.pid.to_s
+          end
+        end
+      end,
+      :StopCallback => lambda do
+        if File.exists? cf.pid_path
+          File.delete get_pidfile(cf, https)
+        end
+      end
     }
 
     config[:ServerType] = Daemon if cf.daemonize
 
     if https
+      require 'webrick/https'
       require 'openssl'
 
       if File.readable? cf.https['certificate']
@@ -76,11 +87,6 @@ module CfWebserver
   def server_start(cf, https = false)
     generate_server(cf, https) do |server|
       server.mount cf.endpoint, CfApiServlet, cf
-      if File.writable? cf.pid_path
-        File.open(get_pidfile(cf, https), "w") do | f |
-          f.puts Process.pid.to_s
-        end
-      end
     end
   end
 
@@ -92,7 +98,6 @@ module CfWebserver
   def server_stop(cf, https = false)
     pid = get_pid(cf, https)
     if pid > 0 # if we have a pid, then we also know the pidfile exists.
-      File.delete get_pidfile(cf, https)
       Process.kill('INT', pid);
     end
   end
@@ -100,13 +105,13 @@ module CfWebserver
   # Method to get the status of the WEBrick web server and process id.
   # @param [Catflap] cf a fully instantiated Catflap object.
   # @param [Boolean] https set to true to get status of an HTTPS server.
-  # @return [Hash] the process id or 0 if there is no pid.
+  # @return [Hash<Sym, Object>] the process id or 0 if there is no pid.
 
   def server_status(cf, https = false)
     status = {
       :pid => get_pid(cf, https),
       :address => cf.bind_addr,
-      :port => cf.port
+      :port => (https) ? cf.https['port'] : cf.port
     }
   end
 

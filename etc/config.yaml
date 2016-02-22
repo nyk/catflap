@@ -15,13 +15,16 @@ server:
   https:
     port: 4773 # TCP oport that catflap https server listens to.
     force: true # Force HTTP requests to redirect to HTTPS.
-    certificate: false # Path to your SSL certificate file.
-    private_key: false # Private key for your SSL certificate.
+    certificate: '' # Path to your SSL certificate file.
+    private_key: '' # Private key for your SSL certificate.
 
 firewall:
   plugin: 'netfilter' # options are netfilter or iptables
   dports: '80,443' # lock multiple ports separating them by commas.
   options: # options are specific to each firewall plugin driver.
     chain: 'CATFLAP' # Namespace for the chains (e.g. CATFLAP-ALLOW, CATFLAP-DENY).
+    forward:
+      80: 8778
+      443: 4773
     log_rejected: true
     accept_local: false # this is only set to false only when devs are testing catflap.
