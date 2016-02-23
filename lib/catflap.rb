@@ -71,12 +71,18 @@ class Catflap
   # @return void
 
   def initialize_config(file_path = nil)
-    file_path = file_path || "etc/config.yaml" # default config
 
-    if File.readable? file_path
-      @config = YAML.load_file file_path if File.readable? file_path
-    else
-      raise IOError, "Cannot read configuration file: #{file_path}"
+    # Look for config file in order of precedence.
+    if !file_path
+      ["~/.catflap", "/usr/local/etc/catflap", "/etc/catflap"].each do | loc |
+        file = File.expand_path(loc + "/config.yaml")
+        if File.readable? file
+          file_path = file
+          break
+        end
+      end
+      # Use default config file if no overriding configuration was found.
+      @config = YAML.load_file(file_path || "etc/config.yaml")
     end
 
     @bind_addr = @config['server']['listen_addr'] || '0.0.0.0'
@@ -119,7 +125,7 @@ class Catflap
   # @param [String] salt a randomly generated number used to randomize the token.
   # @return [String] a token in the form of a SHA256 digest of a string.
 
-  def generate_token pass, salt
+  def generate_token(pass, salt)
     Digest::SHA256.hexdigest pass + salt
   end
 
