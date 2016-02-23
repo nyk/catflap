@@ -29,6 +29,7 @@ module CfWebserver
       :Port => port,
       :DocumentRoot => docroot,
       :StartCallback => lambda do
+        # Write the pid to file when the server starts.
         if File.writable? cf.pid_path
           File.open(get_pidfile(cf, https), "w") do | f |
             f.puts Process.pid.to_s
@@ -36,8 +37,10 @@ module CfWebserver
         end
       end,
       :StopCallback => lambda do
-        if File.exists? cf.pid_path
-          File.delete get_pidfile(cf, https)
+        # Delete the pid file when the server shuts down.
+        pidfile = get_pidfile(cf, https)
+        if File.exists? pidfile
+          File.delete pidfile
         end
       end
     }
@@ -87,6 +90,15 @@ module CfWebserver
   def server_start(cf, https = false)
     generate_server(cf, https) do |server|
       server.mount cf.endpoint, CfApiServlet, cf
+
+      # Redirect HTTP to HTTPS if force option is set.
+      if !https and cf.https['force']
+        server.mount_proc '/' do |req, res|
+          res.set_redirect WEBrick::HTTPStatus::TemporaryRedirect,
+            'https://' + req.server_name
+        end
+      end
+
     end
   end
 
