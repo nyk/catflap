@@ -1,23 +1,24 @@
 #!/usr/bin/env ruby
-$:.unshift File.expand_path("../../lib", __FILE__)
+$LOAD_PATH.unshift File.expand_path('../../lib', __FILE__)
 
-require "optparse"
-require "catflap/command"
+require 'optparse'
+require 'catflap/command'
 
 # Parse options
 options = {}
-optparse = OptionParser.new do |opts|
-  opts.banner = ""
-  opts.on('-d', '--daemonize', 'Run the Catflap services as background processes') do
+OptionParser.new do |opts|
+  opts.banner = ''
+  opts.on('-d', '--daemonize', 'Run services as background processes') do
     options[:daemonize] = true
   end
-  opts.on('-f', '--config-file <filepath>', String, 'Use config file to override default values') do |filepath|
+  opts.on('-f', '--config-file <filepath>', String, 'Use config file' \
+    ' to override default values') do |filepath|
     options[:config_file] = filepath
   end
   opts.on('-V', '--version', 'Display the version of catflap') do
     options[:version] = true
   end
-  opts.on('-n', '--noop', 'Do not run the operation on firewall - no operation') do
+  opts.on('-n', '--noop', 'Do not run destructive operations on firewall') do
     options[:noop] = true
   end
   opts.on('-s', '--https', 'Use HTTPS/SSL to start or manage service') do
@@ -28,7 +29,7 @@ optparse = OptionParser.new do |opts|
   end
   opts.on('-h', '--help', 'Print this help page.') do
     puts "Usage: catflap <command> [<arg>]\n\n"
-    puts "Commands:"
+    puts 'Commands:'
     puts "\tstart \t\t\t Start a catflap server"
     puts "\tstop \t\t\t Stop a catflap server"
     puts "\trestart \t\t\t Restart a catflap server"
@@ -40,7 +41,7 @@ optparse = OptionParser.new do |opts|
     puts "\tgrant <ip> \t\t Add <ip> to allow access"
     puts "\trevoke <ip> \t\t Remove access for <ip>"
     puts "\tpurge \t\t\t Remove all catflap managed access grants"
-    puts "\tbulkload <filename> \t Bulk load a list of IP access grants from file"
+    puts "\tbulkload <filename> \t Bulk load a list of IPs from file"
     puts "\tlist \t\t\t Display a list of all catflap managed access grants"
     puts opts
     exit 0
@@ -48,15 +49,15 @@ optparse = OptionParser.new do |opts|
 end.parse! ARGV # the options are stripped from ARGV after parsing.
 command, arg = ARGV # destructure what is left into a command and its arguments.
 
-cli = CfCommand.new options # create and initialize a command line controller object.
+cli = CfCommand.new options
 
 begin
   # pass command and arg to command dispatcher.
   status = cli.dispatch_commands command, arg
 
-  puts status if command == "version"
+  puts status if command == 'version'
 
-  if command == "check"
+  if command == 'check'
     if status
       puts "The ip '#{arg}' has access GRANTED"
     else
@@ -64,24 +65,25 @@ begin
     end
   end
 
-  if command == "status"
+  if command == 'status'
     if status[:pid] > 0
-      puts "Server listening on #{status[:address]}:#{status[:port]} <pid:#{status[:pid].to_s.chomp}>"
+      puts "Server listening on #{status[:address]}:#{status[:port]}" \
+        " <pid:#{status[:pid].to_s.chomp}>"
     else
       puts "Server is not running on #{status[:address]}:#{status[:port]}"
     end
   end
 
 rescue Resolv::ResolvError => err
-  $stderr.puts "Malformed IP address error: " << err.message
+  warn 'Malformed IP address error: ' << err.message
 rescue Psych::SyntaxError => err
-  $stderr.puts "There is a YAML syntax error in your catflap config file: #{err.message}"
+  warn 'There is a YAML syntax error in your config file: ' << err.message
 rescue ArgumentError => err
-  $stderr.puts "Missing argument error: " << err.message
+  warn 'Missing argument error: ' << err.message
 rescue IOError => err
-  $stderr.puts "File error: #{err.message}"
+  warn 'File error: ' << err.message
 rescue NameError => err
-  $stderr.puts "Command unknown error: " << err.message
+  warn 'Command unknown error: ' << err.message
 rescue StandardError => err
-  $stderr.puts "There was an error: " << err.message
+  warn 'There was an error: ' << err.message
 end
