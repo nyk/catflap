@@ -31,8 +31,6 @@ class CfCommand
   # @return void
   # @raise ArgumentError when a required command argument is missing.
   # @raise NameError when the command is not recognized.
-  # rubocop:disable Metrics/CyclomaticComplexity,Metrics/MethodLength
-  # rubocop:disable Metrics/PerceivedComplexity,Metrics/AbcSize
   def dispatch_commands(command, arg)
     # handle commands and options.
     case command

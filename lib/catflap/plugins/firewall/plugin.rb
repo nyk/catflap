@@ -1,4 +1,3 @@
-##
 # Abstract class plugin driver to implement rules on the NetFilter filter table.
 #
 # Firewall drivers should inherit from this abstract class and implement each
