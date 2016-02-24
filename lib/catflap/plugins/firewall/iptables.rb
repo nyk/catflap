@@ -41,7 +41,7 @@ class Iptables < FirewallPlugin
 
   def install_rules
     jump = (@policy == :reject) ? 'REJECT' : 'DROP'
-    output <<
+    output =
       @t.chain(:add, @allow) <<
       @t.chain(:add, @deny) <<
       @t.rule(:add, 'INPUT', @allow) <<
@@ -57,7 +57,7 @@ class Iptables < FirewallPlugin
   # @raise StandardError when iptables reports an error.
 
   def uninstall_rules
-    output <<
+    output =
       @t.rule(:delete, 'INPUT', @allow) <<
       @t.rule(:delete, 'INPUT', @deny) <<
       @t.chain(:flush, @allow) <<
