@@ -171,7 +171,7 @@ module CfWebserver
 
       raise "#{response_class} not a Class" unless response_class.is_a?(Class)
 
-      raise raise HTTPStatus::NotFound unless path[1].exists?
+      raise raise HTTPStatus::NotFound unless path[1]
 
       response_method = path[1].to_sym
       # Make sure the method exists in the class
@@ -267,7 +267,7 @@ module CfRestService
       if test_token && test_token == query['token']
         # The tokens matched and validated so we add the address and respond
         # to the browser.
-        cf.firewall.add_address ip unless cf.filewall.check_address(ip)
+        cf.firewall.add_address ip unless cf.firewall.check_address(ip)
 
         result = {
           Status: 'Authenticated',
