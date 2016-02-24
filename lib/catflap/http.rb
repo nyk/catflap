@@ -66,73 +66,14 @@ module CfWebserver
 
     end
 
-<<<<<<< HEAD
     server = HTTPServer.new(config)
     yield server if block_given?
 
     %w(INT TERM).each do |signal|
-=======
-  def generate_server(cf, https = false)
-
-    port = (https) ? cf.https['port'] : cf.port
-
-    # Expand relative paths - particularly important for daemonizing.
-    docroot = File.expand_path cf.docroot
-
-    config = {
-      :BindAddress => cf.bind_addr,
-      :Port => port,
-      :DocumentRoot => docroot,
-      :StartCallback => lambda do
-        if File.writable? cf.pid_path
-          File.open(get_pidfile(cf, https), "w") do | f |
-            f.puts Process.pid.to_s
-          end
-        end
-      end,
-      :StopCallback => lambda do
-        if File.exists? cf.pid_path
-          File.delete get_pidfile(cf, https)
-        end
-      end
-    }
-
-    config[:ServerType] = Daemon if cf.daemonize
-
-    if https
-      require 'webrick/https'
-      require 'openssl'
-
-      if File.readable? cf.https['certificate']
-        cert = OpenSSL::X509::Certificate.new File.read cf.https['certificate']
-      end
-
-      if File.readable? cf.https['private_key']
-        pkey = OpenSSL::PKey::RSA.new File.read cf.https['private_key']
-      end
-
-      config[:SSLEnable] = true;
-
-      if cert and pkey
-        config[:SSLCertificate] = cert
-        config[:SSLPrivateKey] = pkey
-      else
-        # We don't have a certificate so generate a new self-signed certificate.
-        config[:SSLCertName] = [%w[CN localhost]]
-      end
-
-    end
-
-    server = HTTPServer.new(config)
-    yield server if block_given?
-
-    ['INT', 'TERM'].each do |signal|
->>>>>>> ff71aaeb0135a814e672eedcbd2609b34e78ae2a
       trap(signal) { server.shutdown }
     end
 
     server.start
-
   end
 
   # Method to start the WEBrick web server.
@@ -162,45 +103,15 @@ module CfWebserver
     Process.kill('INT', pid) if pid > 0
   end
 
-<<<<<<< HEAD
-=======
-  def server_start(cf, https = false)
-    generate_server(cf, https) do |server|
-      server.mount cf.endpoint, CfApiServlet, cf
-    end
-  end
-
-  # Method to stop the WEBrick web server.
-  # @param [Catflap] cf a fully instantiated Catflap object.
-  # @param [Boolean] https set to true to stop an HTTPS server.
-  # @return [Boolean] true if process termination was successful.
-
-  def server_stop(cf, https = false)
-    pid = get_pid(cf, https)
-    if pid > 0 # if we have a pid, then we also know the pidfile exists.
-      Process.kill('INT', pid);
-    end
-  end
-
->>>>>>> ff71aaeb0135a814e672eedcbd2609b34e78ae2a
   # Method to get the status of the WEBrick web server and process id.
   # @param [Catflap] cf a fully instantiated Catflap object.
   # @param [Boolean] https set to true to get status of an HTTPS server.
   # @return [Hash<Sym, Object>] the process id or 0 if there is no pid.
-<<<<<<< HEAD
   def server_status(cf, https = false)
     {
       pid: get_pid(cf, https),
       address: cf.listen_addr,
       port: https ? cf.https['port'] : cf.port
-=======
-
-  def server_status(cf, https = false)
-    status = {
-      :pid => get_pid(cf, https),
-      :address => cf.bind_addr,
-      :port => (https) ? cf.https['port'] : cf.port
->>>>>>> ff71aaeb0135a814e672eedcbd2609b34e78ae2a
     }
   end
 
@@ -208,21 +119,12 @@ module CfWebserver
   # @param [Catflap] cf a fully instantiated Catflap object.
   # @param [Boolean] https set to true to get process id of an HTTPS server.
   # @return [Integer] the process id or 0 if there is no pid.
-<<<<<<< HEAD
-=======
-
->>>>>>> ff71aaeb0135a814e672eedcbd2609b34e78ae2a
   def get_pid(cf, https = false)
     pidfile = get_pidfile(cf, https)
     pid = nil
     if File.readable? pidfile
-<<<<<<< HEAD
       File.open(pidfile, 'r') do |file|
         pid = file.readline
-=======
-      File.open(pidfile, "r") do | f |
-        pid = f.readline
->>>>>>> ff71aaeb0135a814e672eedcbd2609b34e78ae2a
       end
     end
     pid.to_i
@@ -232,14 +134,8 @@ module CfWebserver
   # @param [Catflap] cf a fully instantiated Catflap object.
   # @param [Boolean] https set to true to get pidfile of an HTTPS server.
   # @return [String] the file path to the pid file.
-<<<<<<< HEAD
   def get_pidfile(cf, https = false)
     filename = https ? 'catflap-https.pid' : 'catflap-http.pid'
-=======
-
-  def get_pidfile(cf, https = false)
-    filename = (https) ? "catflap-https.pid" : "catflap-http.pid"
->>>>>>> ff71aaeb0135a814e672eedcbd2609b34e78ae2a
     cf.pid_path + File::SEPARATOR + filename
   end
 
