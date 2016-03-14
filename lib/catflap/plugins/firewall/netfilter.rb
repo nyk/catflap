@@ -1,6 +1,6 @@
 require 'catflap/plugins/firewall/plugin'
-require 'catflap/netfilter/rules'
-include NetfilterRules
+require 'netfilter/writer'
+include NetfilterWriter
 
 ##
 # A firewall plugin driver to implement rules on the NetFilter NAT table.
@@ -15,7 +15,7 @@ include NetfilterRules
 # @example firewall: plugin: 'netfilter'
 #
 # @author Nyk Cowham <nykcowham@gmail.com>
-class Netfilter < FirewallPlugin
+class NetfilterDriver < FirewallPlugin
   # Initialize the driver class.
   # @param [Hash<String, Hash>] config hash: Catflap::initialize_config()
   # @param [Boolean] noop send the commands to the firewall client.
@@ -29,88 +29,86 @@ class Netfilter < FirewallPlugin
     @accept_local = config['firewall']['options']['accept_local'] || false
     @allow = @chain + '-ALLOW'
     @deny = @chain + '-DENY'
-    @t = Table.new(:nat, @dports)
+    @r = Rules.new(:nat, @dports)
+    @r.match('multiport')
+    @r.noop = noop
+    @r.verbose = verbose
   end
 
   # Method to install the driver rules into iptables.
   # @return void
   # @raise StandardError when iptables reports an error.
   def install_rules
+    # We must make these local variables, so they are exposed to the blocks.
+    log = @log_rejected
+    deny_local = !@accept_local
+
     # Create a new chain on the NAT table for our catflap netfilter allow rules.
-    output = @t.chain(:add, @allow) <<
-             @t.chain(:add, @deny) <<
-             @t.rule(:add, 'PREROUTING', @allow) <<
-             @t.rule(:add, 'PREROUTING', @deny) <<
-             @t.rule(:add, @deny, 'LOG') if @log_rejected
+    @r.chain(:new, @allow)
+      .chain(:new, @deny)
+      .rule(:add, chain: 'PREROUTING', jump: @allow)
+      .rule(:add, chain: 'PREROUTING', jump: @deny)
+      .rule(:add, chain: @deny, jump: 'LOG') { log }
+      .rule(:add, chain: 'OUTPUT', out: 'lo', jump: @allow) { deny_local }
+      .rule(:add, chain: 'OUTPUT', out: 'lo', jump: @deny) { deny_local }
 
-    unless @accept_local
-      output <<
-        @t.rule(:add, 'OUTPUT -o lo', @allow) <<
-        @t.rule(:add, 'OUTPUT -o lo', @deny)
-    end
     @forward.each do |src, dest|
-      forward = "REDIRECT --to-port #{dest}"
-      @t.ports = src.to_s # we are only adding a single forward port
-      output << @t.rule(:add, @deny, forward)
+      src = src.to_s
+      @r.rule(:add, chain: @deny, jump: 'REDIRECT', dports: src, to_port: dest)
     end
-
-    execute output
+    @r.do
   end
 
   # Method to uninstall the driver rules from iptables.
   # @return void
   # @raise StandardError when iptables reports an error.
   def uninstall_rules
-    output = @t.rule(:delete, 'PREROUTING', @allow) <<
-             @t.rule(:delete, 'PREROUTING', @deny)
+    deny_local = !@accept_local
 
-    unless @accept_local
-      # This additional rule is required to trap the local output redirect.
-      output <<
-        @t.rule(:delete, 'OUTPUT -o lo', @allow) <<
-        @t.rule(:delete, 'OUTPUT -o lo', @deny)
-    end
-
-    output <<
-      @t.chain(:flush, @allow) <<
-      @t.chain(:flush, @deny) <<
-      @t.chain(:delete, @allow) <<
-      @t.chain(:delete, @deny)
-
-    execute output
+    @r.rule(:delete, chain: 'PREROUTING', jump: @allow)
+      .rule(:delete, chain: 'PREROUTING', jump: @deny)
+      .rule(:delete, chain: 'OUTPUT', out: 'lo',
+                     jump: @allow) { deny_local }
+      .rule(:delete, chain: 'OUTPUT', out: 'lo',
+                     jump: @deny) { deny_local }
+      .chain(:flush, @allow)
+      .chain(:flush, @deny)
+      .chain(:delete, @allow)
+      .chain(:delete, @deny)
+      .do
   end
 
   # Method to purge all rules from CATFLAP-ALLOW chain.
   # @return void
   # @raise StandardError when iptables reports an error.
   def purge_rules
-    execute @t.chain(:flush, @allow)
+    @r.chain(:flush, @allow).do
   end
 
   # Method to list rules in CATFLAP-ALLOW chain.
   # @return void
   # @raise StandardError when iptables reports an error.
   def list_rules
-    execute @t.chain(:list, @allow)
+    @r.chain(:list, @allow).do
   end
 
   # Method to check the CATFLAP-ALLOW chain for an allowed IP.
   # @return [Boolean] true indicates that IP address already has access.
   def check_address(ip)
-    execute_true? @t.rule(:check, @allow, 'ACCEPT', ip)
+    @r.rule(:check, src: ip, chain: @allow, jump: 'ACCEPT').do?
   end
 
   # Method to add/grant an IP access in the CATFLAP-ALLOW chain.
   # @return void
   # @raise StandardError when iptables reports an error.
   def add_address(ip)
-    execute @t.rule(:insert, @allow, 'ACCEPT', ip)
+    @r.rule(:insert, src: ip, chain: @allow, jump: 'ACCEPT').do
   end
 
   # Method to delete/revoke access for an IP in the CATFLAP-ALLOW chain.
   # @return void
   # @raise StandardError when iptables reports an error.
   def delete_address(ip)
-    execute @t.rule(:delete, @allow, 'ACCEPT', ip)
+    @r.rule(:delete, src: ip, chain: @allow, jump: 'ACCEPT').do
   end
 end

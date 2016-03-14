@@ -15,7 +15,8 @@ class CfCommand
   # @param [Hash<String, String>] options an associative array of options
   #   read from the configuration file built by Catflap::initialize_config().
   # @return CatflapCli
-  # @see Catflap - options are generated from file: Catflap::initialize_config()
+  # @see
+  #   Catflap - options are generated from file: Catflap::initialize_config()
   def initialize(options)
     @options = options
     @cf = Catflap.new(

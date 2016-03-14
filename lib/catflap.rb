@@ -103,9 +103,10 @@ class Catflap
   # @return [FirewallPlugin] an object of a class inheriting from FirewallPlugin
   def initialize_firewall_plugin
     plugin = @config['firewall']['plugin']
+    driver = plugin.capitalize + 'Driver'
     require_relative "catflap/plugins/firewall/#{plugin}.rb"
     @firewall =
-      Object.const_get(plugin.capitalize).new(@config, @noop, @verbose)
+      Object.const_get(driver).new(@config, @noop, @verbose)
   end
 
   # Load the pass phrase YAML file.
