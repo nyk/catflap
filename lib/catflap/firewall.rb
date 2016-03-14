@@ -9,6 +9,13 @@ require 'resolv'
 #
 # @author Nyk Cowham <nykcowham@gmail.com>
 module Firewall
+  # http://blog.markhatton.co.uk/2011/03/15/regular-expressions-for-ip-addresses-cidr-ranges-and-hostnames/
+  CIDR_PATTERN = %r{
+    ^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}
+     ([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])
+     (\/([0-9]|[1-2][0-9]|3[0-2]))?$
+  }x
+
   # Execute firewall commands in a forked process.
   # @param [String] output firewall command string to be forked and executed.
   # @return [String] any output returned by the forked process is returned.
@@ -43,6 +50,7 @@ module Firewall
   # @raise Resolve::ResolvError if string doesn't resolve to an IP address.
 
   def assert_valid_ipaddr(suspect)
+    return suspect if suspect =~ CIDR_PATTERN
     Resolv.getaddress(suspect) # raises Resolv::ResolvError on bad IP.
   end
 end
