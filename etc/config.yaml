@@ -27,4 +27,4 @@ firewall:
       80: 8778
       443: 4773
     log_rejected: true
-    accept_local: false # this is only set to false only when devs are testing catflap.
+    accept_local: true # this is set to false only when devs are testing catflap.

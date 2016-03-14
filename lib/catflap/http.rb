@@ -163,15 +163,16 @@ module CfWebserver
       path = req.path[1..-1].split('/')
 
       # We don't want to cache catflap login page so set response headers.
-      resp['Cache-Control'] = 'no-cache, no-store, must-revalidate'
-      resp['Pragma'] = 'no-cache'
-      resp['Expires'] = '0'
+      # Chrome and FF respect the no-store, while IE respects no-cache.
+      resp['Cache-Control'] = 'no-cache, no-store'
+      resp['Pragma'] = 'no-cache' # Legacy
+      resp['Expires'] = '-1' # Microsoft advises this for older IE browsers.
 
       response_class = CfRestService.const_get 'CfRestService'
 
       raise "#{response_class} not a Class" unless response_class.is_a?(Class)
 
-      raise raise HTTPStatus::NotFound unless path[1]
+      raise HTTPStatus::NotFound unless path[1]
 
       response_method = path[1].to_sym
       # Make sure the method exists in the class

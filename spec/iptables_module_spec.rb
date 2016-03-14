@@ -1,71 +1,110 @@
 require 'spec_helper'
-require 'catflap/netfilter/rules'
-include NetfilterRules
+require 'netfilter/writer'
+include NetfilterWriter
 
-describe NetfilterRules do
+describe NetfilterWriter do
   before :all do
-    @nat = Table.new(:nat, '80,443')
-    @filter = Table.new(:filter, '80,443')
+    @rules = Rules.new(:nat, '80,443')
+    @rules.match('multiport')
   end
 
   it 'can make: add a chain rule' do
-    rule = @nat.chain(:add, 'CATFLAP-ALLOW')
-    expect(rule).to eq("iptables -t nat -N CATFLAP-ALLOW\n")
+    expect(
+      @rules.chain(:new, 'CATFLAP-ALLOW').flush
+    ).to eq("iptables -t nat -N CATFLAP-ALLOW\n")
   end
 
   it 'can make: delete a chain rule' do
-    rule = @nat.chain(:delete, 'CATFLAP-ALLOW')
-    expect(rule).to eq("iptables -t nat -X CATFLAP-ALLOW\n")
+    expect(
+      @rules.chain(:delete, 'CATFLAP-ALLOW').flush
+    ).to eq("iptables -t nat -X CATFLAP-ALLOW\n")
   end
 
   it 'can make: flush a chain rule' do
-    rule = @nat.chain(:flush, 'CATFLAP-ALLOW')
-    expect(rule).to eq("iptables -t nat -F CATFLAP-ALLOW\n")
+    expect(
+      @rules.chain(:flush, 'CATFLAP-ALLOW').flush
+    ).to eq("iptables -t nat -F CATFLAP-ALLOW\n")
   end
 
   it 'can make: add a FORWARD rule' do
-    r = @nat.rule(:add, 'PREROUTING', 'REDIRECT --to-port 4773')
-    expect(r).to eq(
+    expect(
+      @rules
+        .rule(:add, chain: 'PREROUTING', jump: 'REDIRECT', to_port: 4773).flush
+    ).to eq(
       'iptables -t nat -A PREROUTING -p tcp -m multiport --dport 80,443' \
       " -j REDIRECT --to-port 4773\n"
     )
   end
 
   it 'can make: add a LOG rule' do
-    r = @nat.rule(:add, 'CATFLAP-DENY', 'LOG')
-    expect(r).to eq(
+    expect(
+      @rules.rule(:add, chain: 'CATFLAP-DENY', jump: 'LOG').flush
+    ).to eq(
       'iptables -t nat -A CATFLAP-DENY -p tcp -m multiport --dport 80,443' \
       " -j LOG\n"
     )
   end
 
   it 'can make: delete INPUT rule' do
-    r = @filter.rule(:delete, 'INPUT', 'CATFLAP-ALLOW')
-    expect(r).to eq(
+    expect(
+      @rules
+        .table(:filter).rule(:delete, chain: 'INPUT', jump: 'CATFLAP-ALLOW')
+        .flush
+    ).to eq(
       'iptables -t filter -D INPUT -p tcp -m multiport --dport 80,443' \
       " -j CATFLAP-ALLOW\n"
     )
   end
 
   it 'can make: delete FORWARD rule' do
-    r = @nat.rule(:delete, 'PREROUTING', 'REDIRECT --to-port 4773')
-    expect(r).to eq(
+    expect(
+      @rules
+        .table(:nat).rule(:delete, chain: 'PREROUTING', jump: 'REDIRECT',
+                                   to_port: 4773).flush
+    ).to eq(
       'iptables -t nat -D PREROUTING -p tcp -m multiport --dport 80,443' \
       " -j REDIRECT --to-port 4773\n"
     )
   end
 
   it 'can make: add ip rule' do
-    r = @nat.rule(:add, 'CATFLAP-ALLOW', 'ACCEPT', '127.0.0.1')
-    expect(r).to eq(
+    expect(
+      @rules
+        .rule(:add, src: '127.0.0.1', chain: 'CATFLAP-ALLOW', jump: 'ACCEPT')
+        .flush
+    ).to eq(
       'iptables -t nat -A CATFLAP-ALLOW -s 127.0.0.1 -p tcp -m multiport' \
       " --dport 80,443 -j ACCEPT\n"
     )
   end
 
+  it 'can make: chain two rules' do
+    expect(
+      @rules
+        .rule(:add, chain: 'PREROUTING', jump: 'CATFLAP-ALLOW')
+        .rule(:add, chain: 'PREROUTING', jump: 'CATFLAP-DENY')
+        .flush
+    ).to eq(
+      'iptables -t nat -A PREROUTING -p tcp -m multiport --dport 80,443' \
+      " -j CATFLAP-ALLOW\n" \
+      'iptables -t nat -A PREROUTING -p tcp -m multiport --dport 80,443' \
+      " -j CATFLAP-DENY\n"
+    )
+  end
+
+  it 'can make: rename chain rule' do
+    expect(
+      @rules.chain(:rename, 'CATFLAP-DENY', to: 'CATFLAP-REJECT').flush
+    ).to eq(
+      "iptables -t nat -E CATFLAP-DENY CATFLAP-REJECT\n"
+    )
+  end
+
   it 'can identify: valid ip input' do
     expect(
-      @nat.rule(:add, 'CATFLAP-ALLOW', 'ACCEPT', '8.8.8.8')
+      @rules
+        .rule(:add, src: '8.8.8.8', chain: 'CATFLAP-ALLOW', jump: 'ACCEPT')
+        .flush
     ).to eq(
       'iptables -t nat -A CATFLAP-ALLOW -s 8.8.8.8 -p tcp' \
       " -m multiport --dport 80,443 -j ACCEPT\n"
@@ -74,7 +113,79 @@ describe NetfilterRules do
 
   it 'can identify: bad IP address' do
     expect do
-      @nat.rule(:add, 'CATFLAP-ALLOW', 'ACCEPT', '127.0??;as')
+      @rules
+        .rule(:add, src: '127.0??;as', chain: 'CATFLAP-ALLOW',
+                    jump: 'ACCEPT').flush
     end.to raise_error(Resolv::ResolvError)
+  end
+
+  it 'can switch contexts: table nat to filter and back again' do
+    expect(
+      @rules
+      .rule(:add, chain: 'PREROUTING', jump: 'CATFLAP-ALLOW')
+      .table('filter').rule(:add, chain: 'INPUT', jump: 'CATFLAP-ALLOW')
+      .table('nat').rule(:add, chain: 'PREROUTING', jump: 'CATFLAP-DENY')
+      .flush
+    ).to eq(
+      'iptables -t nat -A PREROUTING -p tcp -m multiport --dport 80,443' \
+      " -j CATFLAP-ALLOW\n" \
+      'iptables -t filter -A INPUT -p tcp -m multiport --dport 80,443' \
+      " -j CATFLAP-ALLOW\n" \
+      'iptables -t nat -A PREROUTING -p tcp -m multiport --dport 80,443' \
+      " -j CATFLAP-DENY\n" \
+    )
+  end
+
+  it 'can switch contexts: chain to rule to chain' do
+    expect(
+      @rules
+      .chain(:new, 'CATFLAP-DENY')
+      .rule(:add, chain: 'PREROUTING', jump: 'CATFLAP-DENY')
+      .chain(:new, 'CATFLAP-ALLOW')
+      .flush
+    ).to eq(
+      "iptables -t nat -N CATFLAP-DENY\n" \
+      'iptables -t nat -A PREROUTING -p tcp -m multiport --dport 80,443' \
+      " -j CATFLAP-DENY\n" \
+      "iptables -t nat -N CATFLAP-ALLOW\n"
+    )
+  end
+
+  it 'can respond: to block that evaluates a true expression' do
+    expect(
+      @rules
+      .rule(:add, chain: 'PREROUTING', jump: 'CATFLAP-ALLOW')
+      .rule(:add, chain: 'PREROUTING', jump: 'CATFLAP-DENY')
+      .rule(:add, chain: 'CATFLAP-DENY', jump: 'LOG') { true }
+      .rule(:add, chain: 'OUTPUT -o lo', jump: 'CATFLAP-ALLOW')
+      .flush
+    ).to eq(
+      'iptables -t nat -A PREROUTING -p tcp -m multiport' \
+      " --dport 80,443 -j CATFLAP-ALLOW\n" \
+      'iptables -t nat -A PREROUTING -p tcp -m multiport' \
+      " --dport 80,443 -j CATFLAP-DENY\n" \
+      'iptables -t nat -A CATFLAP-DENY -p tcp -m multiport' \
+      " --dport 80,443 -j LOG\n" \
+      'iptables -t nat -A OUTPUT -o lo -p tcp -m multiport' \
+      " --dport 80,443 -j CATFLAP-ALLOW\n"
+    )
+  end
+
+  it 'can respond: to block that evaluates a false expression' do
+    expect(
+      @rules
+      .rule(:add, chain: 'PREROUTING', jump: 'CATFLAP-ALLOW')
+      .rule(:add, chain: 'PREROUTING', jump: 'CATFLAP-DENY')
+      .rule(:add, chain: 'CATFLAP-DENY', jump: 'LOG') { false }
+      .rule(:add, chain: 'OUTPUT -o lo', jump: 'CATFLAP-ALLOW')
+      .flush
+    ).to eq(
+      'iptables -t nat -A PREROUTING -p tcp -m multiport' \
+      " --dport 80,443 -j CATFLAP-ALLOW\n" \
+      'iptables -t nat -A PREROUTING -p tcp -m multiport' \
+      " --dport 80,443 -j CATFLAP-DENY\n" \
+      'iptables -t nat -A OUTPUT -o lo -p tcp -m multiport' \
+      " --dport 80,443 -j CATFLAP-ALLOW\n"
+    )
   end
 end
